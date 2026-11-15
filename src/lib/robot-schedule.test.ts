@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Outcome } from "./bacbo-engine";
 import type { LiveRound } from "./live-table";
 import {
+  clampConfidence,
   clampAnalysisSeconds,
   liveWindow,
   mergeSignals,

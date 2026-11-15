@@ -3,6 +3,7 @@ import type { Outcome } from "./bacbo-engine";
 import type { LiveRound } from "./live-table";
 import {
   clampAnalysisSeconds,
+  liveWindow,
   mergeSignals,
   robotView,
   ROUND_MS,
@@ -90,6 +91,29 @@ describe("robot driven by the real table", () => {
     const list = signalsBetween(cfg, rounds, signIn, at + 6_000);
     expect(list.map((s) => s.key)).toEqual(["r9", "r8", "r7"]);
     for (const s of list) expect(s.at).toBeGreaterThanOrEqual(signIn);
+  });
+
+  it("shows the robot as disconnected when the table has sent nothing", () => {
+    const v = robotView(cfg, [], T0 + 5_000);
+    expect(v.reason).toBe("no_connection");
+    expect(v.signal).toBeNull();
+  });
+
+  it("needs at least 5 past real rounds before sending a signal", () => {
+    const at = T0 + 60_000;
+    const four = table("PPPP", at);
+    const v = robotView(cfg, four, at + 6_000);
+    expect(v.signal).toBeNull();
+    expect(v.reason).toBe("collecting");
+    expect(robotView(cfg, table("BPPPP", at), at + 6_000).phase).not.toBe("off");
+  });
+
+  it("hides rounds from an old connection", () => {
+    const at = T0 + 60_000;
+    expect(liveWindow(surf(at), at + STALE_MS + 1)).toEqual([]);
+    const old = table("PPP", at - 271 * 60_000);
+    const fresh = surf(at).map((r) => ({ ...r, id: `n${r.id}` }));
+    expect(liveWindow([...old, ...fresh], at + 1_000)).toHaveLength(fresh.length);
   });
 
   it("merging keeps one entry per signal, newest first", () => {

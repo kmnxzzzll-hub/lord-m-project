@@ -41,7 +41,6 @@ import { allProfilesQuery, settingsQuery, type Profile } from "@/lib/queries";
 import { useRobot } from "@/lib/robot-context";
 import { feedErrorMessage } from "@/lib/live-table";
 import { clampAnalysisSeconds, MAX_ANALYSIS_S, MIN_ANALYSIS_S } from "@/lib/robot-schedule";
-import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 
 type Status = Database["public"]["Enums"]["account_status"];

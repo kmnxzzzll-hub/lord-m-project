@@ -40,14 +40,7 @@ import { Avatar } from "@/components/bacbo/Avatar";
 import { allProfilesQuery, settingsQuery, type Profile } from "@/lib/queries";
 import { useRobot } from "@/lib/robot-context";
 import { feedErrorMessage } from "@/lib/live-table";
-import {
-  clampAnalysisSeconds,
-  clampConfidence,
-  MAX_ANALYSIS_S,
-  MAX_CONFIDENCE,
-  MIN_ANALYSIS_S,
-  MIN_CONFIDENCE,
-} from "@/lib/robot-schedule";
+import { clampAnalysisSeconds, MAX_ANALYSIS_S, MIN_ANALYSIS_S } from "@/lib/robot-schedule";
 import { cn } from "@/lib/utils";
 
 type Status = Database["public"]["Enums"]["account_status"];
@@ -385,28 +378,24 @@ function RobotControls() {
   const queryClient = useQueryClient();
   const robot = useRobot();
   const { data: settings } = useQuery(settingsQuery);
-  const [minConfidence, setMinConfidence] = useState(70);
   const [seconds, setSeconds] = useState(5);
   const [maintenance, setMaintenance] = useState(false);
 
   useEffect(() => {
     if (!settings) return;
-    setMinConfidence(clampConfidence(settings.min_confidence));
     setSeconds(clampAnalysisSeconds(settings.analysis_seconds));
     setMaintenance(settings.maintenance);
   }, [settings]);
 
   const save = useMutation({
     mutationFn: async (patch: {
-      min_confidence?: number;
       analysis_seconds?: number;
       maintenance?: boolean;
     }) => {
       const now = new Date().toISOString();
       // Restart the shared schedule so every user switches to the new timing together.
       const restart =
-        settings?.running &&
-        (patch.min_confidence !== undefined || patch.analysis_seconds !== undefined);
+        settings?.running && patch.analysis_seconds !== undefined;
       const { error } = await supabase
         .from("robot_settings")
         .update({ ...patch, ...(restart ? { started_at: now } : {}), updated_at: now })
@@ -444,35 +433,6 @@ function RobotControls() {
       <div className="glass rounded-2xl p-4 sm:p-5">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-semibold">Força mínima do padrão</p>
-            <p className="text-xs text-muted-foreground">
-              Só confirma entrada quando o padrão atinge este nível
-            </p>
-          </div>
-          <span className="font-display text-xl font-extrabold sm:text-2xl text-success">
-            {minConfidence}%
-          </span>
-        </div>
-        <Slider
-          className="mt-4"
-          min={MIN_CONFIDENCE}
-          max={MAX_CONFIDENCE}
-          step={1}
-          value={[minConfidence]}
-          onValueChange={([v]) => setMinConfidence(v ?? 70)}
-        />
-        <p className="mt-3 text-[11px] text-muted-foreground">
-          {minConfidence >= 73
-            ? "Muito alto: a mesa quase nunca forma um padrão tão forte, então os sinais ficam raros."
-            : minConfidence <= 62
-              ? "Baixo: muitos sinais, mas menos filtrados."
-              : "Recomendado: 70%. Mais alto = menos sinais e mais seletivos."}
-        </p>
-      </div>
-
-      <div className="glass rounded-2xl p-4 sm:p-5">
-        <div className="flex items-center justify-between">
-          <div>
             <p className="font-semibold">Tempo da análise</p>
             <p className="text-xs text-muted-foreground">
               Segundos depois que a rodada fecha na mesa. Menos tempo = mais tempo para apostar.
@@ -493,7 +453,7 @@ function RobotControls() {
       <motion.button
         whileTap={{ scale: 0.98 }}
         disabled={save.isPending}
-        onClick={() => save.mutate({ min_confidence: minConfidence, analysis_seconds: seconds })}
+        onClick={() => save.mutate({ analysis_seconds: seconds })}
         className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-success/90 to-success font-semibold text-background disabled:opacity-60"
       >
         <ShieldCheck className="h-4 w-4" /> Salvar calibragem

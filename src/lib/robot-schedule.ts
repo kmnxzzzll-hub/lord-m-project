@@ -35,11 +35,12 @@ export const MAX_ANALYSIS_S = 10;
 export const clampAnalysisSeconds = (s: number) =>
   Math.min(MAX_ANALYSIS_S, Math.max(MIN_ANALYSIS_S, Math.round(s)));
 
-/** Strength range the admin can pick; above the max almost no real pattern qualifies. */
-export const MIN_CONFIDENCE = 55;
-export const MAX_CONFIDENCE = 75;
-export const clampConfidence = (n: number) =>
-  Math.min(MAX_CONFIDENCE, Math.max(MIN_CONFIDENCE, Math.round(n)));
+/**
+ * Automatic strength: every recognized pattern (Surf, Xadrez, Parzinho, 3-1-3, Rampa) becomes
+ * a signal. There is no admin setting, because higher filters left the robot silent for long
+ * stretches on the real table.
+ */
+export const AUTO_CONFIDENCE = 60;
 
 export interface ScheduleConfig {
   startedAt: number;

@@ -22,7 +22,13 @@ export const deleteUserAccount = createServerFn({ method: "POST" })
     });
     if (targetIsAdmin) throw new Error("Contas de administrador não podem ser excluídas.");
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (!(await import("./admin-client.server")).serviceKey()) {
+      throw new Error(
+        "Falta a chave de servidor (service_role) para excluir. Use Bloquear enquanto isso.",
+      );
+    }
+    const { getAdminClient } = await import("./admin-client.server");
+    const supabaseAdmin = getAdminClient();
 
     const { data: files } = await supabaseAdmin.storage.from("avatars").list(data.userId);
     if (files?.length) {

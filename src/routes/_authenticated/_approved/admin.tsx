@@ -34,6 +34,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { deleteUserAccount } from "@/lib/admin.functions";
+import { connectLiveTable } from "@/lib/live-table.functions";
+import { liveTableQuery } from "@/lib/queries";
 import { Avatar } from "@/components/bacbo/Avatar";
 import { allProfilesQuery, settingsQuery, type Profile } from "@/lib/queries";
 import { useRobot } from "@/lib/robot-context";
@@ -586,32 +588,74 @@ function PasswordForm() {
 }
 
 function FeedStatus() {
+  const queryClient = useQueryClient();
   const { feed, rounds, clockOffset, tableError } = useRobot();
   const now = useNow(5000) + clockOffset;
   const last = rounds[rounds.length - 1];
   const problem = feedErrorMessage(feed?.lastError) ?? (tableError ? feedErrorMessage("x") : null);
   const fresh = !!last && now - last.settledAt < 90_000;
+  const [key, setKey] = useState("");
+  const connectFn = useServerFn(connectLiveTable);
+  const connect = useMutation({
+    mutationFn: () => connectFn({ data: { key } }),
+    onSuccess: (r) => {
+      if (r.ok) {
+        setKey("");
+        toast.success("Mesa conectada. Recebendo rodadas.");
+        void queryClient.invalidateQueries({ queryKey: liveTableQuery.queryKey });
+      } else {
+        toast.error(feedErrorMessage(r.error) ?? "Não foi possível conectar.");
+      }
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível conectar."),
+  });
   return (
-    <div className="glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
-      <div
-        className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-xl border",
-          problem
-            ? "border-destructive/30 bg-destructive/10 text-destructive"
-            : "border-success/30 bg-success/10 text-success",
-        )}
+    <div className="glass space-y-3 rounded-2xl p-4 sm:p-5">
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-xl border",
+            problem
+              ? "border-destructive/30 bg-destructive/10 text-destructive"
+              : "border-success/30 bg-success/10 text-success",
+          )}
+        >
+          <Radio className="h-5 w-5" />
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold">Mesa ao vivo (LynxMetrics)</p>
+          <p className="text-xs text-muted-foreground">
+            {problem ??
+              (last
+                ? `${fresh ? "Recebendo rodadas" : "Mesa parada"} · última às ${new Date(last.settledAt).toLocaleTimeString("pt-BR")}`
+                : "Sem rodadas ao vivo no momento.")}
+          </p>
+        </div>
+      </div>
+      <form
+        className="flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (key.trim()) connect.mutate();
+        }}
       >
-        <Radio className="h-5 w-5" />
-      </div>
-      <div className="flex-1">
-        <p className="font-semibold">Mesa ao vivo (LynxMetrics)</p>
-        <p className="text-xs text-muted-foreground">
-          {problem ??
-            (last
-              ? `${fresh ? "Recebendo rodadas" : "Mesa parada"} · última às ${new Date(last.settledAt).toLocaleTimeString("pt-BR")}`
-              : "Conectando à mesa…")}
-        </p>
-      </div>
+        <input
+          type="password"
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
+          placeholder="Cole a nova chave da API"
+          autoComplete="off"
+          className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-3 text-sm outline-none focus:border-success/60"
+        />
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          disabled={connect.isPending || !key.trim()}
+          className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-success px-4 text-sm font-semibold text-background disabled:opacity-50"
+        >
+          {connect.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          Ligar conexão
+        </motion.button>
+      </form>
     </div>
   );
 }

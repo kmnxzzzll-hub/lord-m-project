@@ -5,7 +5,6 @@ import { CheckCircle2, Clock3, Loader2, Lock, Mail, ShieldX, UserRound } from "l
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import loginCover from "@/assets/login-cover.jpg";
 import {
   getAccountStatus,
@@ -141,16 +140,15 @@ function AuthPage() {
 
   async function onGoogle() {
     setError(null);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    const result = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth` },
     });
     if (result.error) {
       setError("Não foi possível entrar com o Google.");
       return;
     }
-    if (result.redirected) return;
-    const { data } = await supabase.auth.getUser();
-    if (data.user) await enter(data.user.id);
+    // The browser leaves for Google and comes back to /auth with the session.
   }
 
   return (

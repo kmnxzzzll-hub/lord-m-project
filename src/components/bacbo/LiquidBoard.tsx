@@ -134,7 +134,7 @@ export function LiquidBoard({
       <div className="absolute inset-y-0 left-0 w-[47%]">
         <SideCard
           tone="player"
-          label="Jogador"
+          label="Player"
           value={dist?.player ?? null}
           highlight={winner === "player"}
         />
@@ -142,7 +142,7 @@ export function LiquidBoard({
       <div className="absolute inset-y-0 right-0 w-[47%]">
         <SideCard
           tone="banker"
-          label="Casa"
+          label="Banker"
           value={dist?.banker ?? null}
           highlight={winner === "banker"}
         />
@@ -157,7 +157,7 @@ export function LiquidBoard({
               {active ? `${dist!.tie}%` : "--"}
             </span>
             <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-tie-glow sm:text-[10px] sm:tracking-[0.25em]">
-              Empate
+              Tie
             </span>
           </div>
         </div>

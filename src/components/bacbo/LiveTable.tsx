@@ -59,7 +59,7 @@ function SideDice({ round, side }: { round: LiveRound; side: "player" | "banker"
           isPlayer ? "text-player-glow" : "text-banker-glow",
         )}
       >
-        {isPlayer ? "Jogador" : "Casa"}
+        {isPlayer ? "Player" : "Banker"}
       </span>
       <div className={cn("flex items-center gap-1.5", !isPlayer && "flex-row-reverse")}>
         <DieFace value={dice[0]} tone={side} />
@@ -95,8 +95,7 @@ export function LiveTableCard({
   const now = useNow(1000) + clockOffset;
   const last = rounds[rounds.length - 1];
   const fresh = !!last && now - last.settledAt < 90_000;
-  const road = rounds.slice(-14);
-
+  
   return (
     <div className="glass rounded-[1.5rem] p-3.5 sm:p-4">
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -132,25 +131,14 @@ export function LiveTableCard({
           </motion.div>
           {last.outcome === "T" && last.multiplier && (
             <p className="mt-2 text-center text-[11px] font-semibold text-tie-glow">
-              Empate pagou {last.multiplier}x
+              Tie pagou {last.multiplier}x
             </p>
           )}
-          <div className="mt-3 flex items-center justify-end gap-1 overflow-hidden border-t border-border/60 pt-3">
-            {road.map((r) => (
-              <Ball
-                key={r.id}
-                kind={outcomeKind(r.outcome)}
-                label={outcomeLabel(r.outcome)}
-                size={18}
-              />
-            ))}
-          </div>
         </>
       ) : (
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          {error
-            ? "Não foi possível ler a mesa agora. Tentando de novo…"
-            : "Buscando as rodadas da mesa…"}
+          Sem rodadas ao vivo no momento. Aguardando conexão com a mesa. Não recomendamos operar
+          agora.
         </p>
       )}
     </div>

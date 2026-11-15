@@ -11,10 +11,59 @@ const KEEP_DAYS = 3;
  * Pulls new rounds from the live table into the database. Throttled through the database,
  * so many users polling at once still make only one provider call per interval.
  */
-export async function syncLiveRounds(): Promise<void> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+const CONFIG_BUCKET = "app-config";
+const KEY_PATH = "lynxmetrics.json";
+
+type Admin = ReturnType<typeof import("./admin-client.server").getAdminClient>;
+
+/** API key the admin saved in the panel; falls back to the server setting. */
+export async function readFeedKey(admin: Admin): Promise<string | null> {
+  const { data } = await admin.storage.from(CONFIG_BUCKET).download(KEY_PATH);
+  if (data) {
+    try {
+      const key = (JSON.parse(await data.text()) as { key?: string }).key;
+      if (key) return key;
+    } catch {
+      /* ignore */
+    }
+  }
+  return process.env["UDC_LYNXMETRICS_API_KEY"] ?? null;
+}
+
+export async function saveFeedKey(admin: Admin, key: string): Promise<void> {
+  await admin.storage.createBucket(CONFIG_BUCKET, { public: false }).catch(() => undefined);
+  const { error } = await admin.storage
+    .from(CONFIG_BUCKET)
+    .upload(KEY_PATH, new Blob([JSON.stringify({ key })], { type: "application/json" }), {
+      upsert: true,
+    });
+  if (error) throw new Error(`storage:${error.message}`);
+}
+
+/** Calls the provider once with this key; returns an error code or null when it works. */
+export async function testFeedKey(key: string): Promise<string | null> {
+  const lovableKey = process.env["LOVABLE_API_KEY"];
+  if (!lovableKey) return "missing_credentials";
+  const res = await fetch(`${GATEWAY_URL}/results?limit=1`, {
+    headers: { Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": key },
+  });
+  if (res.ok) return null;
+  const body = await res.text();
+  let code = "";
+  try {
+    code = (JSON.parse(body) as { error?: { code?: string } }).error?.code ?? "";
+  } catch {
+    /* not JSON */
+  }
+  return `http_${res.status}${code ? `:${code}` : ""}`;
+}
+
+export async function syncLiveRounds(force = false): Promise<void> {
+  if (!(await import("./admin-client.server")).serviceKey()) return;
+  const { getAdminClient } = await import("./admin-client.server");
+    const supabaseAdmin = getAdminClient();
   const { data: claimed, error: claimError } = await supabaseAdmin.rpc("claim_live_feed_sync", {
-    _min_interval_ms: SYNC_INTERVAL_MS,
+    _min_interval_ms: force ? 0 : SYNC_INTERVAL_MS,
   });
   if (claimError) {
     console.error("claim_live_feed_sync failed", claimError);
@@ -30,7 +79,7 @@ export async function syncLiveRounds(): Promise<void> {
 
   try {
     const lovableKey = process.env["LOVABLE_API_KEY"];
-    const connectionKey = process.env["UDC_LYNXMETRICS_API_KEY"];
+    const connectionKey = await readFeedKey(supabaseAdmin);
     if (!lovableKey || !connectionKey) throw new Error("missing_credentials");
 
     const { data: last } = await supabaseAdmin

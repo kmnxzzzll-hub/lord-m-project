@@ -84,6 +84,8 @@ export function rowToLiveRound(row: LiveRoundRow): LiveRound {
 /** Admin-facing explanation of a feed error code stored by the sync. */
 export function feedErrorMessage(code: string | null | undefined): string | null {
   if (!code) return null;
+  if (code.includes("missing_service_key"))
+    return "Falta a chave de servidor (service_role) do banco. Sem ela a mesa não sincroniza.";
   if (code.includes("trial_expired"))
     return "O teste da LynxMetrics acabou. Assine um plano para a mesma chave voltar a funcionar.";
   if (code.includes("401") || code.includes("unauthorized") || code.includes("key_"))

@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794570131255,
+      "tag": "0000_bacbo_initial_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794572674464,
+      "tag": "0001_reserved_admin_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794601226178,
+      "tag": "0002_tighten_function_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794734385367,
+      "tag": "0003_live_table_rounds",
+      "breakpoints": true
+    }
+  ]
+}

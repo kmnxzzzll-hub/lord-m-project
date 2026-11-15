@@ -1,0 +1,13 @@
+[
+  {"capability":"code","source":"bacbo_codebase.json","outcome":"migrate","status":"verified","next_action":null},
+  {"capability":"schema","source":"drizzle migrations 0000-0002","outcome":"migrate","status":"verified","next_action":null},
+  {"capability":"records","source":"original database","outcome":"migrate","status":"pending","next_action":"User exports profiles/user_roles/robot_settings as CSV or JSON, or skips"},
+  {"capability":"auth identities","source":"original users","outcome":"migrate","status":"pending","next_action":"User exports users (email + original id), or skips"},
+  {"capability":"admin role","source":"user_roles","outcome":"migrate","status":"pending","next_action":"Owner signs up, then grant admin role"},
+  {"capability":"authorization","source":"RLS + triggers","outcome":"migrate","status":"verified","next_action":null},
+  {"capability":"email/password + Google sign-in","source":"auth.tsx","outcome":"migrate","status":"verified","next_action":"Google sign-in not exercised end to end"},
+  {"capability":"avatar storage","source":"avatars bucket","outcome":"migrate","status":"implemented","next_action":"Existing avatar files not copied; upload not exercised"},
+  {"capability":"images","source":"login-cover, lord-m-mesa","outcome":"migrate","status":"verified","next_action":null},
+  {"capability":"favicon","source":"public/favicon.png","outcome":"migrate","status":"pending","next_action":"Original icon file not included in upload; user attaches it"},
+  {"capability":"secrets","source":".env","outcome":"replaced","status":"verified","next_action":null}
+]

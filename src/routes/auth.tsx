@@ -5,7 +5,6 @@ import { CheckCircle2, Clock3, Loader2, Lock, Mail, ShieldX, UserRound } from "l
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import loginCover from "@/assets/login-cover.jpg";
 import {
   getAccountStatus,

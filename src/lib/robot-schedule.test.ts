@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Outcome } from "./bacbo-engine";
 import type { LiveRound } from "./live-table";
 import {
+  clampConfidence,
   clampAnalysisSeconds,
   liveWindow,
   mergeSignals,
@@ -120,5 +121,16 @@ describe("robot driven by the real table", () => {
     const a = { key: "x:1", side: "player" as const, at: 1 };
     const b = { key: "x:2", side: "banker" as const, at: 2 };
     expect(mergeSignals([a], [a, b])).toEqual([b, a]);
+  });
+});
+
+describe("clampConfidence", () => {
+  it("caps the strength at 75 so a high setting cannot stop all signals", () => {
+    expect(clampConfidence(80)).toBe(75);
+    expect(clampConfidence(90)).toBe(75);
+  });
+  it("keeps 70 as is and raises very low values to 55", () => {
+    expect(clampConfidence(70)).toBe(70);
+    expect(clampConfidence(40)).toBe(55);
   });
 });

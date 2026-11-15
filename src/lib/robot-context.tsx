@@ -14,6 +14,7 @@ import { liveTableQuery, settingsQuery, type RobotSettings } from "@/lib/queries
 import type { LiveRound } from "@/lib/live-table";
 import {
   clampAnalysisSeconds,
+  clampConfidence,
   liveWindow,
   mergeSignals,
   robotView,
@@ -91,7 +92,7 @@ export function RobotProvider({
 
   const analysisMs = clampAnalysisSeconds(settings?.analysis_seconds ?? 5) * 1000;
   const startedAt = settings?.started_at ? Date.parse(settings.started_at) : 0;
-  const minConfidence = settings?.min_confidence ?? 70;
+  const minConfidence = clampConfidence(settings?.min_confidence ?? 70);
 
   const cfg = useMemo<ScheduleConfig | null>(
     () => (active ? { startedAt, analysisMs, minConfidence } : null),

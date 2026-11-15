@@ -35,6 +35,12 @@ export const MAX_ANALYSIS_S = 10;
 export const clampAnalysisSeconds = (s: number) =>
   Math.min(MAX_ANALYSIS_S, Math.max(MIN_ANALYSIS_S, Math.round(s)));
 
+/** Strength range the admin can pick; above the max almost no real pattern qualifies. */
+export const MIN_CONFIDENCE = 55;
+export const MAX_CONFIDENCE = 75;
+export const clampConfidence = (n: number) =>
+  Math.min(MAX_CONFIDENCE, Math.max(MIN_CONFIDENCE, Math.round(n)));
+
 export interface ScheduleConfig {
   startedAt: number;
   analysisMs: number;

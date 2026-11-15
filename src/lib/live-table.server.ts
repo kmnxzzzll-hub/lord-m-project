@@ -1,6 +1,25 @@
 import { lynxToRow, type LynxRound } from "./live-table";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/udc_lynxmetrics/v1/bacbo-live";
+/** LynxMetrics Bac Bo Live API; keys start with `sk-lynx` and go in the `x-api-key` header. */
+const API_URL = "https://api.lynxmetrics.com/v1/bacbo-live";
+const TIMEOUT_MS = 10_000;
+
+const lynxFetch = (path: string, key: string) =>
+  fetch(`${API_URL}${path}`, {
+    headers: { "x-api-key": key, accept: "application/json" },
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+
+async function errorCode(res: Response): Promise<string> {
+  const body = await res.text();
+  let code = "";
+  try {
+    code = (JSON.parse(body) as { error?: { code?: string } }).error?.code ?? "";
+  } catch {
+    /* not JSON */
+  }
+  return `http_${res.status}${code ? `:${code}` : ""}`;
+}
 /** At most one provider call per this interval, shared by every user (API allows 60/min). */
 const SYNC_INTERVAL_MS = 4_000;
 /** Older than this, re-read the latest page instead of catching up round by round. */
@@ -27,7 +46,7 @@ export async function readFeedKey(admin: Admin): Promise<string | null> {
       /* ignore */
     }
   }
-  return process.env["UDC_LYNXMETRICS_API_KEY"] ?? null;
+  return process.env["LYNXMETRICS_API_KEY"] || process.env["UDC_LYNXMETRICS_API_KEY"] || null;
 }
 
 export async function saveFeedKey(admin: Admin, key: string): Promise<void> {
@@ -42,26 +61,18 @@ export async function saveFeedKey(admin: Admin, key: string): Promise<void> {
 
 /** Calls the provider once with this key; returns an error code or null when it works. */
 export async function testFeedKey(key: string): Promise<string | null> {
-  const lovableKey = process.env["LOVABLE_API_KEY"];
-  if (!lovableKey) return "missing_credentials";
-  const res = await fetch(`${GATEWAY_URL}/results?limit=1`, {
-    headers: { Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": key },
-  });
-  if (res.ok) return null;
-  const body = await res.text();
-  let code = "";
   try {
-    code = (JSON.parse(body) as { error?: { code?: string } }).error?.code ?? "";
+    const res = await lynxFetch("/results?limit=1", key);
+    return res.ok ? null : await errorCode(res);
   } catch {
-    /* not JSON */
+    return "network";
   }
-  return `http_${res.status}${code ? `:${code}` : ""}`;
 }
 
 export async function syncLiveRounds(force = false): Promise<void> {
   if (!(await import("./admin-client.server")).serviceKey()) return;
   const { getAdminClient } = await import("./admin-client.server");
-    const supabaseAdmin = getAdminClient();
+  const supabaseAdmin = getAdminClient();
   const { data: claimed, error: claimError } = await supabaseAdmin.rpc("claim_live_feed_sync", {
     _min_interval_ms: force ? 0 : SYNC_INTERVAL_MS,
   });
@@ -78,9 +89,8 @@ export async function syncLiveRounds(force = false): Promise<void> {
       .eq("id", 1);
 
   try {
-    const lovableKey = process.env["LOVABLE_API_KEY"];
     const connectionKey = await readFeedKey(supabaseAdmin);
-    if (!lovableKey || !connectionKey) throw new Error("missing_credentials");
+    if (!connectionKey) throw new Error("missing_credentials");
 
     const { data: last } = await supabaseAdmin
       .from("live_rounds")
@@ -92,22 +102,11 @@ export async function syncLiveRounds(force = false): Promise<void> {
     const params = new URLSearchParams({ limit: "100" });
     if (last && Date.now() - Date.parse(last.settled_at) < CATCH_UP_MS) params.set("after", last.id);
 
-    const res = await fetch(`${GATEWAY_URL}/results?${params}`, {
-      headers: {
-        Authorization: `Bearer ${lovableKey}`,
-        "X-Connection-Api-Key": connectionKey,
-      },
-    });
+    const res = await lynxFetch(`/results?${params}`, connectionKey);
     if (!res.ok) {
-      const body = await res.text();
-      console.error(`LynxMetrics request failed [${res.status}]: ${body.slice(0, 500)}`);
-      let code = "";
-      try {
-        code = (JSON.parse(body) as { error?: { code?: string } }).error?.code ?? "";
-      } catch {
-        /* not JSON */
-      }
-      throw new Error(`http_${res.status}${code ? `:${code}` : ""}`);
+      const code = await errorCode(res);
+      console.error(`LynxMetrics request failed: ${code}`);
+      throw new Error(code);
     }
 
     const body = (await res.json()) as { data?: LynxRound[] };

@@ -21,7 +21,8 @@ export const getLiveTable = createServerFn({ method: "GET" })
     });
     if (!approved) throw new Error("Conta não aprovada.");
 
-    await syncLiveRounds();
+    // A feed problem must never hide the rounds already stored from anyone.
+    await syncLiveRounds().catch((e) => console.error("sync failed", e));
 
     const [roundsRes, feedRes] = await Promise.all([
       context.supabase
@@ -47,7 +48,9 @@ export const getLiveTable = createServerFn({ method: "GET" })
           lastSuccessAt: feedRes.data.last_success_at
             ? Date.parse(feedRes.data.last_success_at)
             : null,
-          lastError: feedRes.data.last_error,
+          lastError: process.env["SUPABASE_SERVICE_ROLE_KEY"]
+            ? feedRes.data.last_error
+            : "missing_service_key",
         }
       : null;
     return {
@@ -55,4 +58,29 @@ export const getLiveTable = createServerFn({ method: "GET" })
       serverNow: Date.now(),
       feed,
     };
+  });
+
+/** Admin only: saves a new LynxMetrics key, tests it and reconnects the table at once. */
+export const connectLiveTable = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { key: string }) => {
+    const key = String(input?.key ?? "").trim();
+    if (key.length < 8 || key.length > 500) throw new Error("Chave inválida.");
+    return { key };
+  })
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Apenas o administrador pode trocar a chave.");
+    if (!process.env["SUPABASE_SERVICE_ROLE_KEY"])
+      return { ok: false, error: "missing_service_key" };
+    const { testFeedKey, saveFeedKey } = await import("./live-table.server");
+    const problem = await testFeedKey(data.key);
+    if (problem) return { ok: false, error: problem };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await saveFeedKey(supabaseAdmin, data.key);
+    await syncLiveRounds(true);
+    return { ok: true, error: null };
   });

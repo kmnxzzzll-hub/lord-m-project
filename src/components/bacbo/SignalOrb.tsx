@@ -67,12 +67,22 @@ export function SignalOrb({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, scale: 0.85, y: -24 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 180, damping: 20 }}
+      transition={{ type: "spring", stiffness: 260, damping: 16 }}
       className="glass relative flex flex-col items-center overflow-hidden rounded-[1.75rem] px-5 py-6 sm:px-6 sm:py-9"
     >
+      <motion.span
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-0 rounded-[1.75rem] border-2",
+          isPlayer ? "border-player" : "border-banker",
+        )}
+        initial={{ opacity: 0.9, scale: 0.96 }}
+        animate={{ opacity: 0, scale: 1.04 }}
+        transition={{ duration: 1.1, ease: "easeOut" }}
+      />
       <BubbleColumn side="left" isPlayer={isPlayer} />
       <BubbleColumn side="right" isPlayer={isPlayer} />
 

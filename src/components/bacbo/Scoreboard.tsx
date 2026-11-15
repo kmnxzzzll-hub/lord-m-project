@@ -58,34 +58,49 @@ export function GreenBanner() {
   return (
     <AnimatePresence>
       {show && (
-        <motion.div
-          key={show.key}
-          initial={{ opacity: 0, y: -40, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -30, scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 320, damping: 24 }}
-          className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4" style={{ paddingTop: "env(safe-area-inset-top)" }}
+        <div
+          className="pointer-events-none fixed inset-x-0 top-2 z-50 flex justify-center px-4"
+          style={{ paddingTop: "env(safe-area-inset-top)" }}
         >
-          <div className="liquid-glass flex items-center gap-3 rounded-full py-2 pl-2 pr-5">
+          <motion.div
+            key={show.key}
+            initial={{ opacity: 0, y: -20, width: 120, height: 36, borderRadius: 999 }}
+            animate={{ opacity: 1, y: 0, width: 300, height: 60 }}
+            exit={{ opacity: 0, y: -16, width: 120, height: 36 }}
+            transition={{ type: "spring", stiffness: 380, damping: 28 }}
+            className={cn(
+              "liquid-glass flex items-center gap-3 overflow-hidden rounded-full pl-2 pr-5",
+              show.tie
+                ? "shadow-[0_0_28px_-4px_var(--tie)]"
+                : blue
+                  ? "shadow-[0_0_28px_-4px_var(--player)]"
+                  : "shadow-[0_0_28px_-4px_var(--banker)]",
+            )}
+          >
             <motion.span
               initial={{ scale: 0, rotate: -40 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.1, type: "spring", stiffness: 400, damping: 14 }}
+              animate={{ scale: [0, 1.2, 1], rotate: 0 }}
+              transition={{ delay: 0.15, duration: 0.5 }}
               className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-full text-background shadow-lg",
-                blue ? "ball-player" : "ball-banker",
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-background shadow-lg",
+                show.tie ? "bg-tie" : blue ? "ball-player" : "ball-banker",
               )}
             >
               <Check className="h-5 w-5" strokeWidth={3} />
             </motion.span>
-            <div className="leading-tight">
-              <p className="font-display text-sm font-extrabold text-success">GREEN!</p>
-              <p className="text-xs text-foreground/80">
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="min-w-0 leading-tight"
+            >
+              <p className="font-display text-sm font-extrabold text-success">🎉 GREEN!</p>
+              <p className="truncate text-xs text-foreground/80">
                 {show.tie ? "Empate · proteção" : `Green no ${blue ? "Azul (Player)" : "Vermelho (Banker)"}`}
               </p>
-            </div>
-          </div>
-        </motion.div>
+            </motion.div>
+          </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );

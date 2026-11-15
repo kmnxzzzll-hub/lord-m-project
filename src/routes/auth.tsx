@@ -148,9 +148,7 @@ function AuthPage() {
       setError("Não foi possível entrar com o Google.");
       return;
     }
-    if (result.redirected) return;
-    const { data } = await supabase.auth.getUser();
-    if (data.user) await enter(data.user.id);
+    // The browser leaves for Google and comes back to /auth with the session.
   }
 
   return (

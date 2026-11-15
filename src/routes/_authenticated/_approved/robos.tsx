@@ -22,10 +22,10 @@ export const Route = createFileRoute("/_authenticated/_approved/robos")({
       {
         name: "description",
         content:
-          "Acompanhe o robô Bac Bo Live, que lê as rodadas reais da mesa e mostra o sinal de Jogador ou Casa.",
+          "Acompanhe o robô Bac Bo Live, que lê as rodadas reais da mesa e mostra o sinal de Player ou Banker.",
       },
       { property: "og:title", content: "Robôs — Bac Bo Live" },
-      { property: "og:description", content: "Sinais de Jogador ou Casa em tempo real." },
+      { property: "og:description", content: "Sinais de Player ou Banker em tempo real." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

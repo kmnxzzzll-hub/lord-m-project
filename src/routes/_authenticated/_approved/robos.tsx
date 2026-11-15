@@ -7,6 +7,7 @@ import { LiquidBoard } from "@/components/bacbo/LiquidBoard";
 import { Cube3D } from "@/components/bacbo/Cube3D";
 import { LiveTableCard } from "@/components/bacbo/LiveTable";
 import { SignalOrb } from "@/components/bacbo/SignalOrb";
+import { Scoreboard } from "@/components/bacbo/Scoreboard";
 import { distribution } from "@/lib/bacbo-engine";
 import { useRobot } from "@/lib/robot-context";
 import { MIN_HISTORY } from "@/lib/robot-schedule";
@@ -65,6 +66,8 @@ function RobotsPage() {
             <Clock />
           </div>
         </header>
+
+        <Scoreboard />
 
         {isAdmin && (
           <motion.button

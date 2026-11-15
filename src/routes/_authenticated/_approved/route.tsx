@@ -10,6 +10,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { BottomNav } from "@/components/bacbo/BottomNav";
+import { GreenBanner } from "@/components/bacbo/Scoreboard";
 import { RobotProvider } from "@/lib/robot-context";
 import { avatarUrlQuery } from "@/lib/avatar";
 import { myAccountQuery } from "@/lib/queries";
@@ -75,6 +76,7 @@ function ApprovedLayout() {
         </motion.div>
       </div>
       <BottomNav />
+      <GreenBanner />
     </RobotProvider>
   );
 }

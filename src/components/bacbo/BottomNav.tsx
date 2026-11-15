@@ -1,12 +1,13 @@
 import { useEffect } from "react";
 import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Bot, History, UserRound } from "lucide-react";
+import { Bot, History, UserRound, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/robos", label: "Robôs", icon: Bot },
   { to: "/historico", label: "Histórico", icon: History },
+  { to: "/banca", label: "Banca", icon: Wallet },
   { to: "/perfil", label: "Perfil", icon: UserRound },
 ] as const;
 

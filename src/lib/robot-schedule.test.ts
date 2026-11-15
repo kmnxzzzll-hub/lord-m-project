@@ -122,3 +122,14 @@ describe("robot driven by the real table", () => {
     expect(mergeSignals([a], [a, b])).toEqual([b, a]);
   });
 });
+
+describe("clampConfidence", () => {
+  it("caps the strength at 75 so a high setting cannot stop all signals", () => {
+    expect(clampConfidence(80)).toBe(75);
+    expect(clampConfidence(90)).toBe(75);
+  });
+  it("keeps 70 as is and raises very low values to 55", () => {
+    expect(clampConfidence(70)).toBe(70);
+    expect(clampConfidence(40)).toBe(55);
+  });
+});

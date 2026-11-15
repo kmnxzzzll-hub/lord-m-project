@@ -13,6 +13,21 @@ export const SIGNAL_HOLD_MS = 45_000;
 /** No new round for this long: the table is treated as quiet and the robot waits. */
 export const STALE_MS = 120_000;
 const HISTORY = 60;
+/** Past real rounds the robot needs before it reads a pattern. */
+export const MIN_HISTORY = 5;
+
+/**
+ * The rounds that count as "live": the unbroken recent run ending in a round settled within
+ * STALE_MS. Old rounds left in the database from an earlier connection are dropped, so a
+ * disconnected table shows nothing instead of hours-old results.
+ */
+export function liveWindow(rounds: LiveRound[], now: number): LiveRound[] {
+  const last = rounds[rounds.length - 1];
+  if (!last || now - last.settledAt > STALE_MS) return [];
+  let start = rounds.length - 1;
+  while (start > 0 && rounds[start]!.settledAt - rounds[start - 1]!.settledAt <= STALE_MS) start--;
+  return start === 0 ? rounds : rounds.slice(start);
+}
 
 export const MIN_ANALYSIS_S = 2;
 export const MAX_ANALYSIS_S = 10;
@@ -27,6 +42,8 @@ export interface ScheduleConfig {
 }
 
 export type RobotPhase = "off" | "analyzing" | "signal";
+/** Why the robot is waiting: no live table, still gathering past rounds, or no pattern. */
+export type WaitReason = "no_connection" | "collecting" | "next_round" | "no_pattern" | null;
 
 export interface RobotView {
   phase: RobotPhase;
@@ -38,6 +55,7 @@ export interface RobotView {
   wakeAt: number;
   /** True while there is no fresh round to analyze or no pattern for the next one. */
   waiting: boolean;
+  reason: WaitReason;
   signal: Signal | null;
   /** Real rounds the current reading is based on, oldest first. */
   history: Round[];
@@ -53,7 +71,7 @@ export function signalAfter(
   minConfidence: number,
 ): Signal | null {
   const round = rounds[index];
-  if (!round) return null;
+  if (!round || index + 1 < MIN_HISTORY) return null;
   const key = `${round.id}:${minConfidence}`;
   if (signalCache.has(key)) return signalCache.get(key)!;
   const history = rounds.slice(Math.max(0, index + 1 - HISTORY), index + 1);
@@ -79,10 +97,11 @@ export function robotView(
       phaseEnd: Infinity,
       wakeAt: Infinity,
       waiting: false,
+      reason: null,
     };
   }
 
-  const waitFor = (from: number, key: string): RobotView => ({
+  const waitFor = (from: number, key: string, reason: WaitReason): RobotView => ({
     ...base,
     phase: "analyzing",
     key,
@@ -90,13 +109,18 @@ export function robotView(
     phaseEnd: Math.max(from + 1_000, from + ROUND_MS),
     wakeAt: Infinity,
     waiting: true,
+    reason,
   });
 
-  // Nothing settled at the table since the robot was switched on, or the table went quiet.
-  if (!lastRound || lastRound.settledAt < cfg.startedAt) {
-    return waitFor(Math.max(cfg.startedAt, lastRound?.settledAt ?? 0), `wait:${cfg.startedAt}`);
+  // No live table: nothing received, or the table went quiet.
+  if (!lastRound || now - lastRound.settledAt > STALE_MS) {
+    return waitFor(Math.max(cfg.startedAt, lastRound?.settledAt ?? 0), "no_connection", "no_connection");
   }
-  if (now - lastRound.settledAt > STALE_MS) return waitFor(lastRound.settledAt, `stale:${lastRound.id}`);
+  // Nothing settled since the robot was switched on: wait for the next real round.
+  if (lastRound.settledAt < cfg.startedAt) {
+    const reason = rounds.length < MIN_HISTORY ? "collecting" : "next_round";
+    return waitFor(lastRound.settledAt, `wait:${cfg.startedAt}`, reason);
+  }
 
   const i = rounds.length - 1;
   const signal = signalAfter(rounds, i, cfg.minConfidence);
@@ -105,7 +129,7 @@ export function robotView(
   const history = rounds.slice(Math.max(0, i + 1 - HISTORY));
 
   if (signal && now >= revealAt) {
-    if (now >= settled + SIGNAL_HOLD_MS) return waitFor(settled, `late:${lastRound.id}`);
+    if (now >= settled + SIGNAL_HOLD_MS) return waitFor(settled, `late:${lastRound.id}`, "next_round");
     return {
       phase: "signal",
       key: lastRound.id,
@@ -113,6 +137,7 @@ export function robotView(
       phaseEnd: Math.max(revealAt + 1_000, settled + ROUND_MS),
       wakeAt: settled + SIGNAL_HOLD_MS,
       waiting: false,
+      reason: null,
       signal,
       history,
       lastRound,
@@ -126,6 +151,7 @@ export function robotView(
     wakeAt: signal ? revealAt : settled + STALE_MS,
     // No pattern for the next round: keep reading the table until the next result.
     waiting: !signal && now >= revealAt,
+    reason: signal ? null : rounds.length < MIN_HISTORY ? "collecting" : now >= revealAt ? "no_pattern" : null,
     signal: null,
     history,
     lastRound,

@@ -89,9 +89,11 @@ export function feedErrorMessage(code: string | null | undefined): string | null
   if (code.includes("trial_expired"))
     return "O teste da LynxMetrics acabou. Assine um plano para a mesma chave voltar a funcionar.";
   if (code.includes("401") || code.includes("unauthorized") || code.includes("key_"))
-    return "A chave da LynxMetrics foi recusada. Confira a chave na conexão da LynxMetrics.";
+    return "A chave da LynxMetrics foi recusada. Copie a chave do Bac Bo Live no painel da LynxMetrics e cole de novo.";
   if (code.includes("429")) return "Limite de consultas da LynxMetrics atingido. Tentando de novo.";
+  if (code.includes("network"))
+    return "A LynxMetrics não respondeu. Tentando de novo em instantes.";
   if (code.includes("missing_credentials"))
-    return "A conexão com a LynxMetrics não está configurada neste servidor.";
+    return "Nenhuma chave da LynxMetrics salva. Cole a chave abaixo e toque em Ligar conexão.";
   return "Não foi possível ler a mesa agora. Tentando de novo.";
 }

@@ -77,8 +77,8 @@ export function RobotProvider({
   }, [clockOffset]);
 
   // Only the live run of rounds counts; hours-old rounds from a past connection are hidden.
-  const window = liveWindow(allRounds, now);
-  const windowStart = allRounds.length - window.length;
+  const liveRun = liveWindow(allRounds, now);
+  const windowStart = allRounds.length - liveRun.length;
   const rounds = useMemo(
     () => (windowStart === 0 ? allRounds : allRounds.slice(windowStart)),
     [allRounds, windowStart],

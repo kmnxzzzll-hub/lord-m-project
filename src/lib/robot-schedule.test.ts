@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { Outcome } from "./bacbo-engine";
 import type { LiveRound } from "./live-table";
 import {
+  ANALYSIS_MS,
   AUTO_CONFIDENCE,
-  clampAnalysisSeconds,
+  BET_CLOSE_MS,
   liveWindow,
   mergeSignals,
   robotView,
   ROUND_MS,
-  SIGNAL_HOLD_MS,
   signalsBetween,
   STALE_MS,
   type ScheduleConfig,
@@ -30,7 +30,7 @@ function table(seq: string, lastAt: number): LiveRound[] {
   }));
 }
 
-const cfg: ScheduleConfig = { startedAt: T0, analysisMs: 5_000, minConfidence: 60 };
+const cfg: ScheduleConfig = { startedAt: T0, minConfidence: 60 };
 // Ends in a run of three Jogador wins → "Surf" pattern says Jogador next.
 const surf = (lastAt: number) => table("BPBBPPP", lastAt);
 
@@ -48,21 +48,44 @@ describe("robot driven by the real table", () => {
     expect(v.signal).toBeNull();
   });
 
-  it("analyzes for the analysis time after a round settles, then reveals the signal", () => {
+  it("analysis is automatic: the signal shows 1.5s after the round settles", () => {
+    expect(ANALYSIS_MS).toBe(1_500);
     const at = T0 + 60_000;
     const rounds = surf(at);
-    expect(robotView(cfg, rounds, at + 4_000).phase).toBe("analyzing");
-    const v = robotView(cfg, rounds, at + 5_000);
+    expect(robotView(cfg, rounds, at + 1_000).phase).toBe("analyzing");
+    const v = robotView(cfg, rounds, at + 1_500);
     expect(v.phase).toBe("signal");
     expect(v.signal?.side).toBe("player");
     expect(v.key).toBe("r6");
   });
 
-  it("drops the signal if no new round arrives in time", () => {
+  it("a round that reaches us late shows its signal at once on arrival", () => {
     const at = T0 + 60_000;
-    const v = robotView(cfg, surf(at), at + SIGNAL_HOLD_MS + 1);
+    const rounds = surf(at);
+    rounds[rounds.length - 1]!.receivedAt = at + 8_000;
+    expect(robotView(cfg, rounds, at + 7_900).phase).toBe("analyzing");
+    expect(robotView(cfg, rounds, at + 8_000).phase).toBe("signal");
+  });
+
+  it("skips the signal when the round arrives with too little time to bet", () => {
+    const at = T0 + 60_000;
+    const rounds = surf(at);
+    rounds[rounds.length - 1]!.receivedAt = at + 18_000;
+    const v = robotView(cfg, rounds, at + 18_500);
     expect(v.phase).toBe("analyzing");
     expect(v.signal).toBeNull();
+    expect(signalsBetween(cfg, rounds, T0, at + 30_000).map((s) => s.key)).not.toContain("r6");
+  });
+
+  it("when bets close the entry leaves the screen and waits for its result", () => {
+    const at = T0 + 60_000;
+    const open = robotView(cfg, surf(at), at + BET_CLOSE_MS - 1);
+    expect(open.phase).toBe("signal");
+    expect(open.phaseEnd).toBe(at + BET_CLOSE_MS);
+    const closed = robotView(cfg, surf(at), at + BET_CLOSE_MS);
+    expect(closed.phase).toBe("analyzing");
+    expect(closed.reason).toBe("result");
+    expect(closed.signal?.side).toBe("player");
   });
 
   it("waits when the table has been quiet for two minutes", () => {
@@ -79,17 +102,11 @@ describe("robot driven by the real table", () => {
     expect(a.signal).toEqual(b.signal);
   });
 
-  it("keeps the analysis time between 2 and 10 seconds", () => {
-    expect(clampAnalysisSeconds(15)).toBe(10);
-    expect(clampAnalysisSeconds(1)).toBe(2);
-    expect(clampAnalysisSeconds(5)).toBe(5);
-  });
-
   it("session history only includes signals revealed after the user signed in", () => {
     const at = T0 + 300_000;
     const rounds = table("PPPPPPPPPP", at);
     const signIn = at - 2 * ROUND_MS;
-    const list = signalsBetween(cfg, rounds, signIn, at + 6_000);
+    const list = signalsBetween(cfg, rounds, signIn, at + 2_000);
     expect(list.map((s) => s.key)).toEqual(["r9", "r8", "r7"]);
     for (const s of list) expect(s.at).toBeGreaterThanOrEqual(signIn);
   });

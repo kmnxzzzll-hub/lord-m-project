@@ -40,7 +40,6 @@ import { Avatar } from "@/components/bacbo/Avatar";
 import { allProfilesQuery, settingsQuery, type Profile } from "@/lib/queries";
 import { useRobot } from "@/lib/robot-context";
 import { feedErrorMessage } from "@/lib/live-table";
-import { clampAnalysisSeconds, MAX_ANALYSIS_S, MIN_ANALYSIS_S } from "@/lib/robot-schedule";
 import { cn } from "@/lib/utils";
 
 type Status = Database["public"]["Enums"]["account_status"];
@@ -378,27 +377,19 @@ function RobotControls() {
   const queryClient = useQueryClient();
   const robot = useRobot();
   const { data: settings } = useQuery(settingsQuery);
-  const [seconds, setSeconds] = useState(5);
   const [maintenance, setMaintenance] = useState(false);
 
   useEffect(() => {
     if (!settings) return;
-    setSeconds(clampAnalysisSeconds(settings.analysis_seconds));
     setMaintenance(settings.maintenance);
   }, [settings]);
 
   const save = useMutation({
-    mutationFn: async (patch: {
-      analysis_seconds?: number;
-      maintenance?: boolean;
-    }) => {
+    mutationFn: async (patch: { maintenance: boolean }) => {
       const now = new Date().toISOString();
-      // Restart the shared schedule so every user switches to the new timing together.
-      const restart =
-        settings?.running && patch.analysis_seconds !== undefined;
       const { error } = await supabase
         .from("robot_settings")
-        .update({ ...patch, ...(restart ? { started_at: now } : {}), updated_at: now })
+        .update({ ...patch, updated_at: now })
         .eq("id", 1);
       if (error) throw error;
     },
@@ -430,34 +421,18 @@ function RobotControls() {
 
       <FeedStatus />
 
-      <div className="glass rounded-2xl p-4 sm:p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold">Tempo da análise</p>
-            <p className="text-xs text-muted-foreground">
-              Segundos depois que a rodada fecha na mesa. Menos tempo = mais tempo para apostar.
-            </p>
-          </div>
-          <span className="font-display text-xl font-extrabold sm:text-2xl">{seconds}s</span>
+      <div className="glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-success/30 bg-success/10 text-success">
+          <ShieldCheck className="h-5 w-5" />
         </div>
-        <Slider
-          className="mt-4"
-          min={MIN_ANALYSIS_S}
-          max={MAX_ANALYSIS_S}
-          step={1}
-          value={[seconds]}
-          onValueChange={([v]) => setSeconds(v ?? 5)}
-        />
+        <div className="flex-1">
+          <p className="font-semibold">Análise automática</p>
+          <p className="text-xs text-muted-foreground">
+            O sinal sai assim que a rodada chega da mesa, com tempo para apostar. Rodadas que
+            chegam atrasadas são puladas.
+          </p>
+        </div>
       </div>
-
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        disabled={save.isPending}
-        onClick={() => save.mutate({ analysis_seconds: seconds })}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-success/90 to-success font-semibold text-background disabled:opacity-60"
-      >
-        <ShieldCheck className="h-4 w-4" /> Salvar calibragem
-      </motion.button>
 
       <div className="glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie">

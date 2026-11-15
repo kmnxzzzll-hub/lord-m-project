@@ -384,7 +384,7 @@ function RobotControls() {
 
   useEffect(() => {
     if (!settings) return;
-    setMinConfidence(settings.min_confidence);
+    setMinConfidence(clampConfidence(settings.min_confidence));
     setSeconds(clampAnalysisSeconds(settings.analysis_seconds));
     setMaintenance(settings.maintenance);
   }, [settings]);
@@ -448,14 +448,18 @@ function RobotControls() {
         </div>
         <Slider
           className="mt-4"
-          min={50}
-          max={90}
+          min={MIN_CONFIDENCE}
+          max={MAX_CONFIDENCE}
           step={1}
           value={[minConfidence]}
           onValueChange={([v]) => setMinConfidence(v ?? 70)}
         />
         <p className="mt-3 text-[11px] text-muted-foreground">
-          Mais alto = menos sinais e mais seletivos.
+          {minConfidence >= 73
+            ? "Muito alto: a mesa quase nunca forma um padrão tão forte, então os sinais ficam raros."
+            : minConfidence <= 62
+              ? "Baixo: muitos sinais, mas menos filtrados."
+              : "Recomendado: 70%. Mais alto = menos sinais e mais seletivos."}
         </p>
       </div>
 

@@ -145,11 +145,6 @@ function RobotsPage() {
                 A mesa ao vivo não está enviando rodadas, então nenhum sinal será enviado. Não
                 recomendamos operar agora.
               </p>
-              {isAdmin && (
-                <p className="mt-3 text-xs text-muted-foreground">
-                  Vá em Painel → Robô → Mesa ao vivo para colar uma nova chave e ligar a conexão.
-                </p>
-              )}
             </Panel>
           ) : phase === "analyzing" ? (
             <Analyzing key={`analyzing-${robot.key}`} />

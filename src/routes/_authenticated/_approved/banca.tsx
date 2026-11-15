@@ -20,8 +20,9 @@ export const Route = createFileRoute("/_authenticated/_approved/banca")({
 
 const KEY = "bacbo:banca";
 interface Plan { bank: number; win: number; loss: number; stake: number; current: number }
-const DEFAULT: Plan = { bank: 100, win: 15, loss: 10, stake: 2, current: 100 };
-const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const DEFAULT: Plan = { bank: 10000, win: 15, loss: 10, stake: 2, current: 10000 };
+const brl = (n: number) =>
+  `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Kz`;
 
 function BankPage() {
   const [plan, setPlan] = useState<Plan>(DEFAULT);
@@ -55,7 +56,7 @@ function BankPage() {
       </header>
 
       <div className="liquid-glass space-y-3 rounded-[1.75rem] p-4 sm:p-5">
-        <Field label="Banca inicial (R$)" value={plan.bank} onChange={(v) => { set("bank")(v); set("current")(v); }} />
+        <Field label="Banca inicial (Kz)" value={plan.bank} onChange={(v) => { set("bank")(v); set("current")(v); }} />
         <div className="grid grid-cols-3 gap-2">
           <Field label="Stop-Win %" value={plan.win} onChange={set("win")} />
           <Field label="Stop-Loss %" value={plan.loss} onChange={set("loss")} />
@@ -70,7 +71,7 @@ function BankPage() {
       </div>
 
       <div className="liquid-glass space-y-3 rounded-[1.75rem] p-4 sm:p-5">
-        <Field label="Banca atual (R$)" value={plan.current} onChange={set("current")} />
+        <Field label="Banca atual (Kz)" value={plan.current} onChange={set("current")} />
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Resultado do dia</span>
           <span className={cn("font-display font-extrabold", profit >= 0 ? "text-success" : "text-destructive")}>
@@ -105,16 +106,29 @@ function BankPage() {
 }
 
 function Field({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  const [text, setText] = useState(String(value));
+  useEffect(() => {
+    setText((t) => (parseNum(t) === value ? t : String(value)));
+  }, [value]);
   return (
     <label className="block">
       <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">{label}</span>
       <input
-        type="number" inputMode="decimal" min={0} value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
+        type="text" inputMode="decimal" value={text}
+        onChange={(e) => {
+          const t = e.target.value.replace(/[^0-9.,]/g, "");
+          setText(t);
+          onChange(parseNum(t));
+        }}
         className="h-11 w-full rounded-xl border border-border bg-card/60 px-3 text-[15px] tabular-nums outline-none focus:border-foreground/25"
       />
     </label>
   );
+}
+
+function parseNum(t: string) {
+  const n = parseFloat(t.replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {

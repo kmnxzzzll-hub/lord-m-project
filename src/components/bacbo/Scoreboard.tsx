@@ -36,6 +36,8 @@ export function Scoreboard() {
 
 /** How long the win/loss notice stays on screen before it leaves by itself. */
 export const RESULT_BANNER_MS = 2_600;
+/** A result is announced only if its entry was shown less than this long ago (about one round). */
+const RESULT_FRESH_MS = 75_000;
 
 /**
  * Floating liquid-glass notice shown when a real round settles an entry: green (a tie counts as
@@ -54,7 +56,8 @@ export function ResultBanner() {
     }
     const fresh = results.filter((r) => !seen.current!.has(r.key));
     fresh.forEach((r) => seen.current!.add(r.key));
-    const latest = fresh.at(-1);
+    // Only results that just happened; opening the app never replays older ones.
+    const latest = fresh.filter((r) => Date.now() - r.at < RESULT_FRESH_MS).at(-1);
     if (latest) setShow(latest);
   }, [results]);
 

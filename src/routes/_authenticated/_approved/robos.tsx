@@ -202,7 +202,7 @@ function Analyzing() {
         {reason === "collecting"
           ? `Coletando rodadas da mesa (${Math.min(rounds.length, MIN_HISTORY)}/${MIN_HISTORY}).`
           : reason === "no_pattern"
-            ? "Sem padrão forte agora. Aguardando a próxima rodada da mesa."
+            ? "Lendo a mesa. O sinal sai assim que um padrão se formar."
             : reason === "next_round"
               ? "Aguardando a próxima rodada da mesa."
               : "Lendo as últimas rodadas da mesa."}

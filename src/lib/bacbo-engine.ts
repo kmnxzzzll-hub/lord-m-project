@@ -3,6 +3,8 @@
  * Rounds: each side rolls two dice; higher sum wins, equal sums = tie (empate).
  * Patterns follow the classic Bac Bo strategy playbook:
  *  - Xadrez (1-1-1), Surf (tendência longa), Parzinho (2-2), 3-1-3, Rampa
+ *  - Tendência da mesa: when no classic pattern is formed, follow the side that dominates
+ *    the last rounds, so the robot has an entry ready for every round
  *  - Proteção de empate (sinaliza cobertura reforçada)
  */
 
@@ -115,8 +117,20 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
     }
   }
 
+  // Tendência da mesa: fallback reading of the last 8 decided rounds.
+  if (matches.length === 0) {
+    const recent = outcomes.filter((o) => o !== "T").slice(-TREND_WINDOW);
+    const p = recent.filter((o) => o === "P").length;
+    const b = recent.length - p;
+    const side = p === b ? cur.side : p > b ? "P" : "B";
+    matches.push({ side: toSide(side), pattern: "Tendência da mesa", confidence: 60 });
+  }
+
   return matches.sort((x, y) => y.confidence - x.confidence);
 }
+
+/** Decided rounds the fallback trend reading looks at. */
+export const TREND_WINDOW = 8;
 
 /** Tie protection: long drought or a very recent tie means cover the tie with extra care. */
 export function tieAlert(outcomes: Outcome[]): boolean {

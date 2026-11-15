@@ -14,7 +14,6 @@ import { liveTableQuery, settingsQuery, type RobotSettings } from "@/lib/queries
 import type { LiveRound } from "@/lib/live-table";
 import {
   AUTO_CONFIDENCE,
-  clampAnalysisSeconds,
   liveWindow,
   mergeSignals,
   robotView,
@@ -28,7 +27,6 @@ import { loadHistory, saveHistory } from "@/lib/session-history";
 interface RobotState extends RobotView {
   running: boolean;
   maintenance: boolean;
-  analysisMs: number;
   isAdmin: boolean;
   /** Real rounds received from the live table, oldest first. */
   rounds: LiveRound[];
@@ -65,8 +63,8 @@ export function RobotProvider({
   const maintenance = settings?.maintenance ?? false;
   const active = running && !maintenance;
 
-  // Poll the live table often while the robot runs; slowly otherwise (history stays fresh).
-  const live = useQuery({ ...liveTableQuery, refetchInterval: active ? 4_000 : 20_000 });
+  // Poll the live table every 2s while the robot runs so a new round shows almost at once.
+  const live = useQuery({ ...liveTableQuery, refetchInterval: active ? 2_000 : 20_000 });
   const allRounds = live.data?.rounds ?? NO_ROUNDS;
   const clockOffset = live.data?.clockOffset ?? 0;
 
@@ -90,13 +88,12 @@ export function RobotProvider({
     setSessionSignals(loadHistory(userId, sessionStart));
   }, [userId, sessionStart]);
 
-  const analysisMs = clampAnalysisSeconds(settings?.analysis_seconds ?? 5) * 1000;
   const startedAt = settings?.started_at ? Date.parse(settings.started_at) : 0;
   const minConfidence = AUTO_CONFIDENCE;
 
   const cfg = useMemo<ScheduleConfig | null>(
-    () => (active ? { startedAt, analysisMs, minConfidence } : null),
-    [active, startedAt, analysisMs, minConfidence],
+    () => (active ? { startedAt, minConfidence } : null),
+    [active, startedAt, minConfidence],
   );
 
   // All timing runs on the server clock so every device flips at the same moment.
@@ -167,7 +164,6 @@ export function RobotProvider({
       wakeAt: view.wakeAt - clockOffset,
       running,
       maintenance,
-      analysisMs,
       isAdmin,
       rounds,
       clockOffset,
@@ -182,7 +178,6 @@ export function RobotProvider({
       clockOffset,
       running,
       maintenance,
-      analysisMs,
       isAdmin,
       rounds,
       feed,

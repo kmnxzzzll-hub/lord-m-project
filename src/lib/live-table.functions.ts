@@ -28,7 +28,7 @@ export const getLiveTable = createServerFn({ method: "GET" })
       context.supabase
         .from("live_rounds")
         .select(
-          "id, settled_at, outcome, player_dice, banker_dice, player_score, banker_score, multiplier",
+          "id, settled_at, received_at, outcome, player_dice, banker_dice, player_score, banker_score, multiplier",
         )
         .order("settled_at", { ascending: false })
         .limit(60),

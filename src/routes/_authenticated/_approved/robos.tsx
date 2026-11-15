@@ -22,10 +22,10 @@ export const Route = createFileRoute("/_authenticated/_approved/robos")({
       {
         name: "description",
         content:
-          "Acompanhe o robô Bac Bo Live, que lê as rodadas reais da mesa e mostra o sinal de Jogador ou Casa.",
+          "Acompanhe o robô Bac Bo Live, que lê as rodadas reais da mesa e mostra o sinal de Player ou Banker.",
       },
       { property: "og:title", content: "Robôs — Bac Bo Live" },
-      { property: "og:description", content: "Sinais de Jogador ou Casa em tempo real." },
+      { property: "og:description", content: "Sinais de Player ou Banker em tempo real." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -153,6 +153,7 @@ function RobotsPage() {
               <SignalOrb
                 key={`signal-${robot.key}`}
                 side={robot.signal.side}
+                pattern={robot.signal.pattern}
                 phaseStart={robot.phaseStart}
                 phaseEnd={robot.phaseEnd}
               />
@@ -183,42 +184,54 @@ function Panel({ children }: { children: ReactNode }) {
   );
 }
 
+const sideName = (side: "player" | "banker") =>
+  side === "player" ? "Azul (Player)" : "Vermelho (Banker)";
+
 function Analyzing() {
-  const { phaseStart, phaseEnd, reason, rounds } = useRobot();
+  const { phaseStart, phaseEnd, reason, rounds, waiting, signal } = useRobot();
   const now = useNow(100);
-  const total = phaseEnd - phaseStart;
+  const total = Math.max(1, phaseEnd - phaseStart);
   const elapsed = Math.min(total, Math.max(0, now - phaseStart));
-  const left = Math.max(0, Math.ceil((total - elapsed) / 1000));
   const isMobile = useIsMobile();
+
+  const text =
+    reason === "collecting"
+      ? `Coletando rodadas da mesa (${Math.min(rounds.length, MIN_HISTORY)}/${MIN_HISTORY}).`
+      : reason === "result" && signal
+        ? `Apostas fechadas. Aguardando o resultado da entrada no ${sideName(signal.side)}.`
+        : reason === "no_pattern"
+          ? "Lendo a mesa. A entrada sai na próxima rodada."
+          : reason === "next_round"
+            ? "Aguardando a próxima rodada da mesa."
+            : "Calculando a entrada para a próxima rodada.";
 
   return (
     <Panel>
       <Cube3D size={isMobile ? 76 : 100} />
       <h2 className="mt-2 font-display text-base font-extrabold tracking-[0.12em] sm:mt-3 sm:text-xl sm:tracking-[0.14em]">
         <span className="text-success">SISTEMA ONLINE</span>{" "}
-        <span className="text-foreground">ANALISANDO</span>
+        <span className="text-foreground">
+          {reason === "result" ? "AGUARDANDO" : "ANALISANDO"}
+        </span>
       </h2>
-      <p className="mt-1.5 text-xs text-muted-foreground">
-        {reason === "collecting"
-          ? `Coletando rodadas da mesa (${Math.min(rounds.length, MIN_HISTORY)}/${MIN_HISTORY}).`
-          : reason === "no_pattern"
-            ? "Lendo a mesa. O sinal sai assim que um padrão se formar."
-            : reason === "next_round"
-              ? "Aguardando a próxima rodada da mesa."
-              : "Lendo as últimas rodadas da mesa."}
+      <p className="mt-1.5 text-xs text-muted-foreground">{text}</p>
+      <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">
+        Surf · Xadrez · Parzinho · 3-1-3 · Rampa · Tendência
       </p>
-      <div className="mt-4 w-full sm:mt-6">
-        <div className="mb-1.5 flex justify-end text-[11px] font-semibold text-muted-foreground">
-          <span className="tabular-nums">{left}s</span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-full bg-muted">
+      <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted sm:mt-6">
+        {waiting ? (
+          // No countdown while waiting on the table: the next round decides when it moves on.
+          <motion.div
+            className="h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-success to-transparent"
+            animate={{ x: ["-100%", "300%"] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          />
+        ) : (
           <div
             className="relative h-full rounded-full bg-gradient-to-r from-success/60 to-success transition-[width] duration-100 ease-linear"
             style={{ width: `${(elapsed / total) * 100}%` }}
-          >
-            <span className="absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 translate-x-1/2 rounded-full bg-success shadow-[0_0_12px_var(--success)]" />
-          </div>
-        </div>
+          />
+        )}
       </div>
     </Panel>
   );

@@ -89,7 +89,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Bac Bo Live — Robô de Sinais" },
       {
         name: "description",
-        content: "Robô de sinais para Bac Bo Live: o sinal de Jogador ou Casa assim que é gerado.",
+        content: "Robô de sinais para Bac Bo Live: o sinal de Player ou Banker assim que é gerado.",
       },
       { property: "og:title", content: "Bac Bo Live — Robô de Sinais" },
       {

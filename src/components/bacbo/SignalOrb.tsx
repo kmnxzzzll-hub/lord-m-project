@@ -54,16 +54,21 @@ function BubbleColumn({ side, isPlayer }: { side: "left" | "right"; isPlayer: bo
 
 export function SignalOrb({
   side,
+  pattern,
   phaseStart,
   phaseEnd,
 }: {
   side: Side;
+  /** Strategy that produced the entry, shown so the user knows what was read. */
+  pattern: string;
   phaseStart: number;
+  /** When bets for this round close. */
   phaseEnd: number;
 }) {
   const now = useNow(250);
   const isPlayer = side === "player";
   const left = Math.max(0, Math.min(1, (phaseEnd - now) / (phaseEnd - phaseStart)));
+  const secondsLeft = Math.max(0, Math.ceil((phaseEnd - now) / 1000));
 
   return (
     <motion.div
@@ -120,9 +125,15 @@ export function SignalOrb({
           isPlayer ? "text-player-glow" : "text-banker-glow",
         )}
       >
-        {isPlayer ? "JOGADOR" : "CASA"}
+        {isPlayer ? "PLAYER" : "BANKER"}
       </motion.h2>
-      <div className="relative mt-4 h-1 w-32 overflow-hidden rounded-full bg-muted sm:mt-6 sm:w-40">
+      <p className="relative mt-1 text-xs font-semibold text-muted-foreground">
+        Estratégia: <span className="text-foreground">{pattern}</span> · Empate = Green
+      </p>
+      <p className="relative mt-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:mt-4">
+        Aposte agora · <span className="tabular-nums text-foreground">{secondsLeft}s</span>
+      </p>
+      <div className="relative mt-2 h-1 w-32 overflow-hidden rounded-full bg-muted sm:w-40">
         <div
           className={cn(
             "h-full rounded-full transition-[width] duration-300 ease-linear",

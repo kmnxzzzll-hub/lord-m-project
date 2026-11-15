@@ -25,7 +25,7 @@ async function errorCode(res: Response): Promise<string> {
   return `http_${res.status}${code ? `:${code}` : ""}`;
 }
 /** At most one provider call per this interval, shared by every user (API allows 60/min). */
-const SYNC_INTERVAL_MS = 4_000;
+const SYNC_INTERVAL_MS = 2_000;
 /** Older than this, re-read the latest page instead of catching up round by round. */
 const CATCH_UP_MS = 30 * 60_000;
 const KEEP_DAYS = 3;

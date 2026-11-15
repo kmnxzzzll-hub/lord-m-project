@@ -30,12 +30,14 @@ export type LiveRoundRow = Pick<
   | "player_score"
   | "banker_score"
   | "multiplier"
->;
+> & { received_at?: string | null };
 
 /** A real round, ready for the pattern engine. */
 export interface LiveRound extends Round {
   id: string;
   settledAt: number;
+  /** When our server first stored this round (server clock); drives late-round detection. */
+  receivedAt?: number;
   pScore: number;
   bScore: number;
   multiplier: number | null;
@@ -72,6 +74,7 @@ export function rowToLiveRound(row: LiveRoundRow): LiveRound {
   return {
     id: row.id,
     settledAt: Date.parse(row.settled_at),
+    ...(row.received_at ? { receivedAt: Date.parse(row.received_at) } : {}),
     outcome: OUTCOMES[row.outcome] ?? "T",
     p: [row.player_dice[0] ?? 1, row.player_dice[1] ?? 1],
     b: [row.banker_dice[0] ?? 1, row.banker_dice[1] ?? 1],

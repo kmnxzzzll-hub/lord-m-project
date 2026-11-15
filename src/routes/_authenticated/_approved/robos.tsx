@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Moon, Power, Wrench } from "lucide-react";
+import { Moon, Power, WifiOff, Wrench } from "lucide-react";
 import { Logo } from "@/components/bacbo/Logo";
 import { LiquidBoard } from "@/components/bacbo/LiquidBoard";
 import { Cube3D } from "@/components/bacbo/Cube3D";
@@ -9,6 +9,7 @@ import { LiveTableCard } from "@/components/bacbo/LiveTable";
 import { SignalOrb } from "@/components/bacbo/SignalOrb";
 import { distribution } from "@/lib/bacbo-engine";
 import { useRobot } from "@/lib/robot-context";
+import { MIN_HISTORY } from "@/lib/robot-schedule";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -94,11 +95,7 @@ function RobotsPage() {
           winner={phase === "signal" ? (robot.signal?.side ?? null) : null}
         />
 
-        <LiveTableCard
-          rounds={robot.rounds}
-          clockOffset={robot.clockOffset}
-          error={robot.tableError}
-        />
+        <LiveTableCard rounds={robot.rounds} />
       </div>
 
       <div className="lg:pt-2">
@@ -129,6 +126,27 @@ function RobotsPage() {
                   ? "Toque em Ligar Robô para iniciar os sinais para todos."
                   : "Aguarde o administrador iniciar o robô."}
               </p>
+            </Panel>
+          ) : robot.reason === "no_connection" ? (
+            <Panel key="offline">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive sm:h-16 sm:w-16">
+                <WifiOff className="h-7 w-7" />
+              </div>
+              <span className="mt-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-muted-foreground sm:mt-4">
+                Robô ligado
+              </span>
+              <h2 className="mt-1 font-display text-xl font-extrabold sm:text-2xl">
+                SEM CONEXÃO COM A MESA
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                A mesa ao vivo não está enviando rodadas, então nenhum sinal será enviado. Não
+                recomendamos operar agora.
+              </p>
+              {isAdmin && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Vá em Painel → Robô → Mesa ao vivo para colar uma nova chave e ligar a conexão.
+                </p>
+              )}
             </Panel>
           ) : phase === "analyzing" ? (
             <Analyzing key={`analyzing-${robot.key}`} />
@@ -168,7 +186,7 @@ function Panel({ children }: { children: ReactNode }) {
 }
 
 function Analyzing() {
-  const { phaseStart, phaseEnd, waiting, lastRound } = useRobot();
+  const { phaseStart, phaseEnd, reason, rounds } = useRobot();
   const now = useNow(100);
   const total = phaseEnd - phaseStart;
   const elapsed = Math.min(total, Math.max(0, now - phaseStart));
@@ -183,11 +201,13 @@ function Analyzing() {
         <span className="text-foreground">ANALISANDO</span>
       </h2>
       <p className="mt-1.5 text-xs text-muted-foreground">
-        {!lastRound
-          ? "Sem rodadas ao vivo no momento. Não recomendamos operar agora."
-          : waiting
+        {reason === "collecting"
+          ? `Coletando rodadas da mesa (${Math.min(rounds.length, MIN_HISTORY)}/${MIN_HISTORY}).`
+          : reason === "no_pattern"
             ? "Sem padrão forte agora. Aguardando a próxima rodada da mesa."
-            : "Lendo as últimas rodadas da mesa."}
+            : reason === "next_round"
+              ? "Aguardando a próxima rodada da mesa."
+              : "Lendo as últimas rodadas da mesa."}
       </p>
       <div className="mt-4 w-full sm:mt-6">
         <div className="mb-1.5 flex justify-end text-[11px] font-semibold text-muted-foreground">

@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { Radio } from "lucide-react";
 import { Ball, outcomeKind, outcomeLabel } from "@/components/bacbo/Ball";
 import type { LiveRound } from "@/lib/live-table";
-import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 
 const PIPS: Record<number, number[]> = {
@@ -46,11 +45,11 @@ export function DieFace({
   );
 }
 
-function SideDice({ round, side }: { round: LiveRound; side: "player" | "banker" }) {
+function SideDice({ round, side }: { round: LiveRound | null; side: "player" | "banker" }) {
   const isPlayer = side === "player";
-  const dice = isPlayer ? round.p : round.b;
-  const score = isPlayer ? round.pScore : round.bScore;
-  const won = round.outcome === (isPlayer ? "P" : "B");
+  const dice = round ? (isPlayer ? round.p : round.b) : [0, 0];
+  const score = round ? (isPlayer ? round.pScore : round.bScore) : 0;
+  const won = !!round && round.outcome === (isPlayer ? "P" : "B");
   return (
     <div className={cn("flex flex-col gap-1", isPlayer ? "items-start" : "items-end")}>
       <span
@@ -62,8 +61,8 @@ function SideDice({ round, side }: { round: LiveRound; side: "player" | "banker"
         {isPlayer ? "Player" : "Banker"}
       </span>
       <div className={cn("flex items-center gap-1.5", !isPlayer && "flex-row-reverse")}>
-        <DieFace value={dice[0]} tone={side} />
-        <DieFace value={dice[1]} tone={side} />
+        <DieFace value={dice[0] ?? 0} tone={side} />
+        <DieFace value={dice[1] ?? 0} tone={side} />
         <span
           className={cn(
             "font-display text-xl font-extrabold tabular-nums sm:text-2xl",
@@ -77,68 +76,50 @@ function SideDice({ round, side }: { round: LiveRound; side: "player" | "banker"
   );
 }
 
-function ago(ms: number) {
-  const s = Math.max(0, Math.round(ms / 1000));
-  return s < 60 ? `há ${s}s` : `há ${Math.floor(s / 60)} min`;
-}
+/** Last live result at the table; zeros while the table is not connected. */
+export function LiveTableCard({ rounds }: { rounds: LiveRound[] }) {
+  const last = rounds[rounds.length - 1] ?? null;
 
-/** Last real result at the table, its dice, and the recent road. */
-export function LiveTableCard({
-  rounds,
-  clockOffset,
-  error,
-}: {
-  rounds: LiveRound[];
-  clockOffset: number;
-  error: boolean;
-}) {
-  const now = useNow(1000) + clockOffset;
-  const last = rounds[rounds.length - 1];
-  const fresh = !!last && now - last.settledAt < 90_000;
-  
   return (
     <div className="glass rounded-[1.5rem] p-3.5 sm:p-4">
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
         <span className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-[0.2em]">
-          <Radio className={cn("h-3.5 w-3.5", fresh ? "text-success" : "text-muted-foreground")} />
+          <Radio className={cn("h-3.5 w-3.5", last ? "text-success" : "text-muted-foreground")} />
           Mesa ao vivo
         </span>
-        <span className="tabular-nums">
-          {error && !last
-            ? "Sem conexão"
-            : last
-              ? `Última rodada ${ago(now - last.settledAt)}`
-              : "Conectando…"}
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 font-semibold",
+            last ? "text-success" : "text-destructive",
+          )}
+        >
+          <span className={cn("h-1.5 w-1.5 rounded-full", last ? "bg-success" : "bg-destructive")} />
+          {last ? "Conectada" : "Sem conexão"}
         </span>
       </div>
 
-      {last ? (
-        <>
-          <motion.div
-            key={last.id}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-3 flex items-end justify-between gap-2"
-          >
-            <SideDice round={last} side="player" />
-            <Ball
-              kind={outcomeKind(last.outcome)}
-              label={outcomeLabel(last.outcome)}
-              size={30}
-              className="mb-0.5"
-            />
-            <SideDice round={last} side="banker" />
-          </motion.div>
-          {last.outcome === "T" && last.multiplier && (
-            <p className="mt-2 text-center text-[11px] font-semibold text-tie-glow">
-              Tie pagou {last.multiplier}x
-            </p>
-          )}
-        </>
-      ) : (
-        <p className="mt-3 text-center text-xs text-muted-foreground">
-          Sem rodadas ao vivo no momento. Aguardando conexão com a mesa. Não recomendamos operar
-          agora.
+      <motion.div
+        key={last?.id ?? "none"}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-3 flex items-end justify-between gap-2"
+      >
+        <SideDice round={last} side="player" />
+        {last ? (
+          <Ball
+            kind={outcomeKind(last.outcome)}
+            label={outcomeLabel(last.outcome)}
+            size={30}
+            className="mb-0.5"
+          />
+        ) : (
+          <span className="mb-1 font-display text-sm font-bold text-muted-foreground">×</span>
+        )}
+        <SideDice round={last} side="banker" />
+      </motion.div>
+      {last?.outcome === "T" && last.multiplier && (
+        <p className="mt-2 text-center text-[11px] font-semibold text-tie-glow">
+          Tie pagou {last.multiplier}x
         </p>
       )}
     </div>

@@ -64,7 +64,7 @@ export function GreenBanner() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -30, scale: 0.95 }}
           transition={{ type: "spring", stiffness: 320, damping: 24 }}
-          className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4 pt-safe"
+          className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4" style={{ paddingTop: "env(safe-area-inset-top)" }}
         >
           <div className="liquid-glass flex items-center gap-3 rounded-full py-2 pl-2 pr-5">
             <motion.span

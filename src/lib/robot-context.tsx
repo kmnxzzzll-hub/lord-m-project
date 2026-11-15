@@ -13,8 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { liveTableQuery, settingsQuery, type RobotSettings } from "@/lib/queries";
 import type { LiveRound } from "@/lib/live-table";
 import {
+  AUTO_CONFIDENCE,
   clampAnalysisSeconds,
-  clampConfidence,
   liveWindow,
   mergeSignals,
   robotView,
@@ -92,7 +92,7 @@ export function RobotProvider({
 
   const analysisMs = clampAnalysisSeconds(settings?.analysis_seconds ?? 5) * 1000;
   const startedAt = settings?.started_at ? Date.parse(settings.started_at) : 0;
-  const minConfidence = clampConfidence(settings?.min_confidence ?? 70);
+  const minConfidence = AUTO_CONFIDENCE;
 
   const cfg = useMemo<ScheduleConfig | null>(
     () => (active ? { startedAt, analysisMs, minConfidence } : null),

@@ -6,10 +6,14 @@
 import { detectSignal, type Round, type Side, type Signal } from "./bacbo-engine";
 import type { LiveRound } from "./live-table";
 
-/** Typical time between two results at the Bac Bo Live table. */
-export const ROUND_MS = 31_000;
-/** A signal stays up until the next round arrives, but never longer than this. */
-export const SIGNAL_HOLD_MS = 45_000;
+/** Typical time between two results at the Bac Bo Live table (measured ~33-38s). */
+export const ROUND_MS = 35_000;
+/** Automatic analysis: the signal is ready this long after the round settles (no admin setting). */
+export const ANALYSIS_MS = 1_500;
+/** Estimated moment, after a round settles, when bets for the next round close. */
+export const BET_CLOSE_MS = 24_000;
+/** A round reaching us later than this after settling leaves too little time to bet: no signal. */
+export const LATE_MS = 17_000;
 /** No new round for this long: the table is treated as quiet and the robot waits. */
 export const STALE_MS = 120_000;
 const HISTORY = 60;
@@ -29,11 +33,11 @@ export function liveWindow(rounds: LiveRound[], now: number): LiveRound[] {
   return start === 0 ? rounds : rounds.slice(start);
 }
 
-export const MIN_ANALYSIS_S = 2;
-export const MAX_ANALYSIS_S = 10;
-/** Analysis must end while bets for the next round are still open. */
-export const clampAnalysisSeconds = (s: number) =>
-  Math.min(MAX_ANALYSIS_S, Math.max(MIN_ANALYSIS_S, Math.round(s)));
+/** When the signal after this round shows: right after the analysis, or as soon as the round arrived. */
+export const revealTime = (r: LiveRound) => Math.max(r.settledAt + ANALYSIS_MS, r.receivedAt ?? 0);
+/** The round arrived too late to bet on the next one. Same answer on every device. */
+export const arrivedLate = (r: LiveRound) =>
+  r.receivedAt !== undefined && r.receivedAt - r.settledAt > LATE_MS;
 
 /**
  * Automatic strength: every recognized pattern (Surf, Xadrez, Parzinho, 3-1-3, Rampa) becomes
@@ -44,13 +48,21 @@ export const AUTO_CONFIDENCE = 60;
 
 export interface ScheduleConfig {
   startedAt: number;
-  analysisMs: number;
   minConfidence: number;
 }
 
 export type RobotPhase = "off" | "analyzing" | "signal";
-/** Why the robot is waiting: no live table, still gathering past rounds, or no pattern. */
-export type WaitReason = "no_connection" | "collecting" | "next_round" | "no_pattern" | null;
+/**
+ * Why the robot is waiting: no live table, still gathering past rounds, waiting for the next
+ * round, no pattern, or bets closed and the entry's result is on its way.
+ */
+export type WaitReason =
+  | "no_connection"
+  | "collecting"
+  | "next_round"
+  | "no_pattern"
+  | "result"
+  | null;
 
 export interface RobotView {
   phase: RobotPhase;
@@ -63,6 +75,7 @@ export interface RobotView {
   /** True while there is no fresh round to analyze or no pattern for the next one. */
   waiting: boolean;
   reason: WaitReason;
+  /** Current entry; also kept while bets are closed and its result is pending. */
   signal: Signal | null;
   /** Real rounds the current reading is based on, oldest first. */
   history: Round[];
@@ -130,38 +143,61 @@ export function robotView(
   }
 
   const i = rounds.length - 1;
-  const signal = signalAfter(rounds, i, cfg.minConfidence);
   const settled = lastRound.settledAt;
-  const revealAt = settled + cfg.analysisMs;
+  const late = arrivedLate(lastRound);
+  const signal = late ? null : signalAfter(rounds, i, cfg.minConfidence);
+  const revealAt = revealTime(lastRound);
+  const closeAt = settled + BET_CLOSE_MS;
   const history = rounds.slice(Math.max(0, i + 1 - HISTORY));
+  const common = { history, lastRound, key: lastRound.id };
 
   if (signal && now >= revealAt) {
-    if (now >= settled + SIGNAL_HOLD_MS) return waitFor(settled, `late:${lastRound.id}`, "next_round");
+    // Bets closed: the entry leaves the screen and the robot waits for its result.
+    if (now >= closeAt) {
+      return {
+        ...common,
+        phase: "analyzing",
+        phaseStart: closeAt,
+        phaseEnd: settled + ROUND_MS,
+        wakeAt: Infinity,
+        waiting: true,
+        reason: "result",
+        signal,
+      };
+    }
     return {
+      ...common,
       phase: "signal",
-      key: lastRound.id,
       phaseStart: revealAt,
-      phaseEnd: Math.max(revealAt + 1_000, settled + ROUND_MS),
-      wakeAt: settled + SIGNAL_HOLD_MS,
+      phaseEnd: Math.max(revealAt + 1_000, closeAt),
+      wakeAt: closeAt,
       waiting: false,
       reason: null,
       signal,
-      history,
-      lastRound,
     };
   }
+  if (signal) {
+    return {
+      ...common,
+      phase: "analyzing",
+      phaseStart: settled,
+      phaseEnd: revealAt,
+      wakeAt: revealAt,
+      waiting: false,
+      reason: null,
+      signal: null,
+    };
+  }
+  // No entry for the next round (no pattern, too few rounds, or the round came in late).
   return {
+    ...common,
     phase: "analyzing",
-    key: lastRound.id,
     phaseStart: settled,
-    phaseEnd: signal ? revealAt : settled + ROUND_MS,
-    wakeAt: signal ? revealAt : settled + STALE_MS,
-    // No pattern for the next round: keep reading the table until the next result.
-    waiting: !signal && now >= revealAt,
-    reason: signal ? null : rounds.length < MIN_HISTORY ? "collecting" : now >= revealAt ? "no_pattern" : null,
+    phaseEnd: settled + ROUND_MS,
+    wakeAt: settled + STALE_MS,
+    waiting: true,
+    reason: rounds.length < MIN_HISTORY ? "collecting" : late ? "next_round" : "no_pattern",
     signal: null,
-    history,
-    lastRound,
   };
 }
 
@@ -183,9 +219,10 @@ export function signalsBetween(
   for (let i = rounds.length - 1; i >= 0 && out.length < limit; i--) {
     const r = rounds[i]!;
     if (r.settledAt < cfg.startedAt) break;
-    const at = r.settledAt + cfg.analysisMs;
+    const at = revealTime(r);
     if (at > to) continue;
-    if (at < from) break;
+    if (r.settledAt + ANALYSIS_MS < from) break;
+    if (at < from || arrivedLate(r)) continue;
     const signal = signalAfter(rounds, i, cfg.minConfidence);
     if (signal) out.push({ key: r.id, side: signal.side, at });
   }

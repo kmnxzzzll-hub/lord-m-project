@@ -14,16 +14,207 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      live_feed_status: {
+        Row: {
+          id: number
+          last_attempt_at: string
+          last_error: string | null
+          last_success_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          last_attempt_at?: string
+          last_error?: string | null
+          last_success_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          last_attempt_at?: string
+          last_error?: string | null
+          last_success_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      live_rounds: {
+        Row: {
+          banker_dice: number[]
+          banker_score: number
+          id: string
+          multiplier: number | null
+          outcome: string
+          player_dice: number[]
+          player_score: number
+          received_at: string
+          settled_at: string
+          started_at: string | null
+          table_id: string | null
+        }
+        Insert: {
+          banker_dice: number[]
+          banker_score: number
+          id: string
+          multiplier?: number | null
+          outcome: string
+          player_dice: number[]
+          player_score: number
+          received_at?: string
+          settled_at: string
+          started_at?: string | null
+          table_id?: string | null
+        }
+        Update: {
+          banker_dice?: number[]
+          banker_score?: number
+          id?: string
+          multiplier?: number | null
+          outcome?: string
+          player_dice?: number[]
+          player_score?: number
+          received_at?: string
+          settled_at?: string
+          started_at?: string | null
+          table_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["account_status"]
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          id: string
+          name?: string
+          status?: Database["public"]["Enums"]["account_status"]
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["account_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      robot_settings: {
+        Row: {
+          analysis_seconds: number
+          id: number
+          maintenance: boolean
+          min_confidence: number
+          running: boolean
+          started_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_seconds?: number
+          id?: number
+          maintenance?: boolean
+          min_confidence?: number
+          running?: boolean
+          started_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_seconds?: number
+          id?: number
+          maintenance?: boolean
+          min_confidence?: number
+          running?: boolean
+          started_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      signals: {
+        Row: {
+          confidence: number
+          created_at: string
+          id: string
+          pattern: string
+          result: string
+          rounds: Json
+          side: string
+          tie_hit: boolean
+          user_id: string
+        }
+        Insert: {
+          confidence: number
+          created_at?: string
+          id?: string
+          pattern: string
+          result: string
+          rounds?: Json
+          side: string
+          tie_hit?: boolean
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          pattern?: string
+          result?: string
+          rounds?: Json
+          side?: string
+          tie_hit?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_live_feed_sync: {
+        Args: { _min_interval_ms: number }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_approved: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      account_status: "pending" | "approved" | "rejected" | "blocked"
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +341,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_status: ["pending", "approved", "rejected", "blocked"],
+      app_role: ["admin", "user"],
+    },
   },
 } as const

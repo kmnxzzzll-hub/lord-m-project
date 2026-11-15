@@ -2,12 +2,16 @@ import { lynxToRow, type LynxRound } from "./live-table";
 
 /** LynxMetrics Bac Bo Live API; keys start with `sk-lynx` and go in the `x-api-key` header. */
 const API_URL = "https://api.lynxmetrics.com/v1/bacbo-live";
-const TIMEOUT_MS = 10_000;
+// The provider itself gives up at 10s; wait a little longer so its own error reaches us.
+const TIMEOUT_MS = 12_000;
 
+/** Network failures and timeouts all surface as the `network` code. */
 const lynxFetch = (path: string, key: string) =>
   fetch(`${API_URL}${path}`, {
     headers: { "x-api-key": key, accept: "application/json" },
     signal: AbortSignal.timeout(TIMEOUT_MS),
+  }).catch(() => {
+    throw new Error("network");
   });
 
 async function errorCode(res: Response): Promise<string> {
@@ -69,8 +73,14 @@ export async function testFeedKey(key: string): Promise<string | null> {
   }
 }
 
+/** Set after a 429: no provider calls before this time (from the Retry-After header). */
+let pausedUntil = 0;
+/** Pages fetched per sync when catching up after a pause. */
+const MAX_PAGES = 3;
+
 export async function syncLiveRounds(force = false): Promise<void> {
   if (!(await import("./admin-client.server")).serviceKey()) return;
+  if (!force && Date.now() < pausedUntil) return;
   const { getAdminClient } = await import("./admin-client.server");
   const supabaseAdmin = getAdminClient();
   const { data: claimed, error: claimError } = await supabaseAdmin.rpc("claim_live_feed_sync", {
@@ -99,26 +109,48 @@ export async function syncLiveRounds(force = false): Promise<void> {
       .limit(1)
       .maybeSingle();
 
-    const params = new URLSearchParams({ limit: "100" });
-    if (last && Date.now() - Date.parse(last.settled_at) < CATCH_UP_MS) params.set("after", last.id);
+    // Resume right after the last stored round (oldest first); a stale or unknown cursor
+    // falls back to the latest page so the table never gets stuck on an old id.
+    let cursor = last && Date.now() - Date.parse(last.settled_at) < CATCH_UP_MS ? last.id : null;
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const params = new URLSearchParams({ limit: "100" });
+      if (cursor) params.set("after", cursor);
+      let res = await lynxFetch(`/results?${params}`, connectionKey);
+      if (!res.ok && cursor && (res.status === 400 || res.status === 403 || res.status === 404)) {
+        const code = await errorCode(res);
+        if (!/unauthorized|key_|trial_expired|subscription_required/.test(code)) {
+          cursor = null;
+          res = await lynxFetch("/results?limit=100", connectionKey);
+        } else throw new Error(code);
+      }
+      if (!res.ok) {
+        if (res.status === 429) {
+          const wait = Number(res.headers.get("retry-after"));
+          pausedUntil = Date.now() + (Number.isFinite(wait) && wait > 0 ? wait : 10) * 1000;
+        }
+        const code = await errorCode(res);
+        console.error(`LynxMetrics request failed: ${code}`);
+        throw new Error(code);
+      }
 
-    const res = await lynxFetch(`/results?${params}`, connectionKey);
-    if (!res.ok) {
-      const code = await errorCode(res);
-      console.error(`LynxMetrics request failed: ${code}`);
-      throw new Error(code);
+      const body = (await res.json().catch(() => null)) as {
+        data?: LynxRound[];
+        nextCursor?: string | null;
+      } | null;
+      if (!body || !Array.isArray(body.data)) throw new Error("bad_response");
+      const rows = body.data.map(lynxToRow).filter((r) => r !== null);
+      if (rows.length) {
+        const { error } = await supabaseAdmin
+          .from("live_rounds")
+          .upsert(rows, { onConflict: "id", ignoreDuplicates: true });
+        if (error) throw new Error(`db:${error.message}`);
+      }
+      // Only a full page read with `after` has more to catch up on.
+      if (!cursor || body.data.length < 100 || !body.nextCursor) break;
+      cursor = body.nextCursor;
     }
-
-    const body = (await res.json()) as { data?: LynxRound[] };
-    const rows = (body.data ?? []).map(lynxToRow).filter((r) => r !== null);
-    if (rows.length) {
-      const { error } = await supabaseAdmin
-        .from("live_rounds")
-        .upsert(rows, { onConflict: "id", ignoreDuplicates: true });
-      if (error) throw new Error(`db:${error.message}`);
-      const cutoff = new Date(Date.now() - KEEP_DAYS * 86_400_000).toISOString();
-      await supabaseAdmin.from("live_rounds").delete().lt("settled_at", cutoff);
-    }
+    const cutoff = new Date(Date.now() - KEEP_DAYS * 86_400_000).toISOString();
+    await supabaseAdmin.from("live_rounds").delete().lt("settled_at", cutoff);
     await setStatus({ last_success_at: new Date().toISOString(), last_error: null });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

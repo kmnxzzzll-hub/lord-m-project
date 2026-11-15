@@ -1,0 +1,40 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+/** Permanently removes a user's account, profile, roles and avatar. Admin only. */
+export const deleteUserAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { userId: string }) =>
+    z.object({ userId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Apenas o administrador pode excluir cadastros.");
+    if (data.userId === context.userId) throw new Error("Você não pode excluir a própria conta.");
+
+    const { data: targetIsAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: data.userId,
+      _role: "admin",
+    });
+    if (targetIsAdmin) throw new Error("Contas de administrador não podem ser excluídas.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: files } = await supabaseAdmin.storage.from("avatars").list(data.userId);
+    if (files?.length) {
+      await supabaseAdmin.storage
+        .from("avatars")
+        .remove(files.map((f) => `${data.userId}/${f.name}`));
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) {
+      console.error("deleteUser failed", error);
+      throw new Error("Não foi possível excluir o cadastro.");
+    }
+    return { ok: true };
+  });

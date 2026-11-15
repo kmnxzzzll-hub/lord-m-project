@@ -589,11 +589,9 @@ function PasswordForm() {
 
 function FeedStatus() {
   const queryClient = useQueryClient();
-  const { feed, rounds, clockOffset, tableError } = useRobot();
-  const now = useNow(5000) + clockOffset;
+  const { feed, rounds, tableError } = useRobot();
   const last = rounds[rounds.length - 1];
   const problem = feedErrorMessage(feed?.lastError) ?? (tableError ? feedErrorMessage("x") : null);
-  const fresh = !!last && now - last.settledAt < 90_000;
   const [key, setKey] = useState("");
   const connectFn = useServerFn(connectLiveTable);
   const connect = useMutation({
@@ -627,8 +625,10 @@ function FeedStatus() {
           <p className="text-xs text-muted-foreground">
             {problem ??
               (last
-                ? `${fresh ? "Recebendo rodadas" : "Mesa parada"} · última às ${new Date(last.settledAt).toLocaleTimeString("pt-BR")}`
-                : "Sem rodadas ao vivo no momento.")}
+                ? `Conectada · recebendo rodadas (${rounds.length})`
+                : feed?.lastSuccessAt
+                  ? "Conectada · aguardando a próxima rodada da mesa."
+                  : "Sem conexão com a mesa.")}
           </p>
         </div>
       </div>
@@ -643,7 +643,7 @@ function FeedStatus() {
           type="password"
           value={key}
           onChange={(e) => setKey(e.target.value)}
-          placeholder="Cole a nova chave da API"
+          placeholder="Cole a chave (sk-lynx…)"
           autoComplete="off"
           className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-3 text-sm outline-none focus:border-success/60"
         />
@@ -656,6 +656,10 @@ function FeedStatus() {
           Ligar conexão
         </motion.button>
       </form>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
+        Use a chave do Bac Bo Live criada no painel da LynxMetrics. Ela é testada antes de ser
+        salva, e a mesa reconecta na hora, já buscando as últimas rodadas.
+      </p>
     </div>
   );
 }

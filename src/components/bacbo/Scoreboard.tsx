@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useRobot } from "@/lib/robot-context";
 import { scoreSignals, summarize, type SignalResult } from "@/lib/scoreboard";
 import { cn } from "@/lib/utils";
@@ -34,12 +34,19 @@ export function Scoreboard() {
   );
 }
 
-/** Floating liquid-glass banner shown when a real round confirms a green. */
-export function GreenBanner() {
+/** How long the win/loss notice stays on screen before it leaves by itself. */
+export const RESULT_BANNER_MS = 2_600;
+
+/**
+ * Floating liquid-glass notice shown when a real round settles an entry: green (a tie counts as
+ * green) or loss. It closes on its own after RESULT_BANNER_MS.
+ */
+export function ResultBanner() {
   const results = useSessionResults();
   const seen = useRef<Set<string> | null>(null);
   const [show, setShow] = useState<SignalResult | null>(null);
 
+  // Detect results that are new since the last look (the first look only marks what exists).
   useEffect(() => {
     if (!seen.current) {
       seen.current = new Set(results.map((r) => r.key));
@@ -47,14 +54,30 @@ export function GreenBanner() {
     }
     const fresh = results.filter((r) => !seen.current!.has(r.key));
     fresh.forEach((r) => seen.current!.add(r.key));
-    const green = fresh.filter((r) => r.green).at(-1);
-    if (!green) return;
-    setShow(green);
-    const t = setTimeout(() => setShow(null), 4000);
-    return () => clearTimeout(t);
+    const latest = fresh.at(-1);
+    if (latest) setShow(latest);
   }, [results]);
 
+  // Its own timer, so table refreshes every few seconds can never keep the notice stuck.
+  const showKey = show?.key;
+  useEffect(() => {
+    if (!showKey) return;
+    const t = setTimeout(() => setShow(null), RESULT_BANNER_MS);
+    return () => clearTimeout(t);
+  }, [showKey]);
+
   const blue = show?.side === "player";
+  const sideName = blue ? "Azul (Player)" : "Vermelho (Banker)";
+  const glow = !show
+    ? ""
+    : !show.green
+      ? "shadow-[0_0_28px_-4px_var(--destructive)]"
+      : show.tie
+        ? "shadow-[0_0_28px_-4px_var(--tie)]"
+        : blue
+          ? "shadow-[0_0_28px_-4px_var(--player)]"
+          : "shadow-[0_0_28px_-4px_var(--banker)]";
+
   return (
     <AnimatePresence>
       {show && (
@@ -64,17 +87,14 @@ export function GreenBanner() {
         >
           <motion.div
             key={show.key}
+            role="status"
             initial={{ opacity: 0, y: -20, width: 120, height: 36, borderRadius: 999 }}
             animate={{ opacity: 1, y: 0, width: 300, height: 60 }}
             exit={{ opacity: 0, y: -16, width: 120, height: 36 }}
             transition={{ type: "spring", stiffness: 380, damping: 28 }}
             className={cn(
               "liquid-glass flex items-center gap-3 overflow-hidden rounded-full pl-2 pr-5",
-              show.tie
-                ? "shadow-[0_0_28px_-4px_var(--tie)]"
-                : blue
-                  ? "shadow-[0_0_28px_-4px_var(--player)]"
-                  : "shadow-[0_0_28px_-4px_var(--banker)]",
+              glow,
             )}
           >
             <motion.span
@@ -83,10 +103,20 @@ export function GreenBanner() {
               transition={{ delay: 0.15, duration: 0.5 }}
               className={cn(
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-background shadow-lg",
-                show.tie ? "bg-tie" : blue ? "ball-player" : "ball-banker",
+                !show.green
+                  ? "bg-destructive"
+                  : show.tie
+                    ? "bg-tie"
+                    : blue
+                      ? "ball-player"
+                      : "ball-banker",
               )}
             >
-              <Check className="h-5 w-5" strokeWidth={3} />
+              {show.green ? (
+                <Check className="h-5 w-5" strokeWidth={3} />
+              ) : (
+                <X className="h-5 w-5" strokeWidth={3} />
+              )}
             </motion.span>
             <motion.div
               initial={{ opacity: 0, x: -8 }}
@@ -94,9 +124,20 @@ export function GreenBanner() {
               transition={{ delay: 0.2 }}
               className="min-w-0 leading-tight"
             >
-              <p className="font-display text-sm font-extrabold text-success">🎉 GREEN!</p>
+              <p
+                className={cn(
+                  "font-display text-sm font-extrabold",
+                  show.green ? "text-success" : "text-destructive",
+                )}
+              >
+                {show.green ? "🎉 GREEN!" : "😕 LOSS"}
+              </p>
               <p className="truncate text-xs text-foreground/80">
-                {show.tie ? "Empate · proteção" : `Green no ${blue ? "Azul (Player)" : "Vermelho (Banker)"}`}
+                {show.green
+                  ? show.tie
+                    ? "Empate · conta como Green"
+                    : `Green no ${sideName}`
+                  : `Entrada no ${sideName} não bateu`}
               </p>
             </motion.div>
           </motion.div>

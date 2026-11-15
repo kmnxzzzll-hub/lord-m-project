@@ -14,6 +14,7 @@ import { liveTableQuery, settingsQuery, type RobotSettings } from "@/lib/queries
 import type { LiveRound } from "@/lib/live-table";
 import {
   clampAnalysisSeconds,
+  liveWindow,
   mergeSignals,
   robotView,
   signalsBetween,
@@ -65,10 +66,23 @@ export function RobotProvider({
 
   // Poll the live table often while the robot runs; slowly otherwise (history stays fresh).
   const live = useQuery({ ...liveTableQuery, refetchInterval: active ? 4_000 : 20_000 });
-  const rounds = live.data?.rounds ?? NO_ROUNDS;
+  const allRounds = live.data?.rounds ?? NO_ROUNDS;
   const clockOffset = live.data?.clockOffset ?? 0;
 
   const [now, setNow] = useState(() => Date.now());
+  // Tick so a table that stops sending is noticed even without new data.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now() + clockOffset), 5_000);
+    return () => clearInterval(id);
+  }, [clockOffset]);
+
+  // Only the live run of rounds counts; hours-old rounds from a past connection are hidden.
+  const liveRun = liveWindow(allRounds, now);
+  const windowStart = allRounds.length - liveRun.length;
+  const rounds = useMemo(
+    () => (windowStart === 0 ? allRounds : allRounds.slice(windowStart)),
+    [allRounds, windowStart],
+  );
   const [sessionSignals, setSessionSignals] = useState<SessionSignal[]>([]);
 
   useEffect(() => {
@@ -85,7 +99,7 @@ export function RobotProvider({
   );
 
   // All timing runs on the server clock so every device flips at the same moment.
-  useEffect(() => setNow(Date.now() + clockOffset), [cfg, rounds, clockOffset]);
+  useEffect(() => setNow(Date.now() + clockOffset), [cfg, allRounds, clockOffset]);
   const view = useMemo(() => robotView(cfg, rounds, now), [cfg, rounds, now]);
 
   // Re-render exactly when the view changes on its own (signal reveal, hold timeout).

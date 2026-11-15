@@ -76,7 +76,9 @@ function HistoryPage() {
       )}
 
       <section className="mt-5 sm:mt-6">
-        <h2 className="pb-2.5 font-display text-base font-bold sm:text-lg">Rodadas da mesa</h2>
+        <h2 className="pb-2.5 font-display text-base font-bold sm:text-lg">
+          Rodadas da mesa · {recent.length}
+        </h2>
         {recent.length === 0 ? (
           <div className="glass rounded-[1.75rem] p-6 text-center text-sm text-muted-foreground">
             Sem rodadas ao vivo no momento. Aguardando conexão com a mesa. Não recomendamos operar

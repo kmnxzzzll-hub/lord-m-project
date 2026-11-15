@@ -66,7 +66,7 @@ function HistoryPage() {
               >
                 <Ball
                   kind={s.side}
-                  label={s.side === "player" ? "J" : "C"}
+                  label={s.side === "player" ? "P" : "B"}
                   size={isMobile ? 34 : 40}
                 />
               </motion.li>
@@ -79,7 +79,8 @@ function HistoryPage() {
         <h2 className="pb-2.5 font-display text-base font-bold sm:text-lg">Rodadas da mesa</h2>
         {recent.length === 0 ? (
           <div className="glass rounded-[1.75rem] p-6 text-center text-sm text-muted-foreground">
-            Buscando as rodadas da mesa ao vivo…
+            Sem rodadas ao vivo no momento. Aguardando conexão com a mesa. Não recomendamos operar
+            agora.
           </div>
         ) : (
           <ul className="glass divide-y divide-border/60 rounded-[1.75rem] px-4 sm:px-5">

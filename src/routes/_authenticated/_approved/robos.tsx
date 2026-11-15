@@ -184,7 +184,7 @@ function Analyzing() {
       </h2>
       <p className="mt-1.5 text-xs text-muted-foreground">
         {!lastRound
-          ? "Conectando à mesa ao vivo…"
+          ? "Sem rodadas ao vivo no momento. Não recomendamos operar agora."
           : waiting
             ? "Sem padrão forte agora. Aguardando a próxima rodada da mesa."
             : "Lendo as últimas rodadas da mesa."}

@@ -31,4 +31,4 @@ export function Ball({
 
 export const outcomeKind = (o: "P" | "B" | "T"): Kind =>
   o === "P" ? "player" : o === "B" ? "banker" : "tie";
-export const outcomeLabel = (o: "P" | "B" | "T") => (o === "P" ? "J" : o === "B" ? "C" : "E");
+export const outcomeLabel = (o: "P" | "B" | "T") => (o === "P" ? "P" : o === "B" ? "B" : "T");

@@ -89,3 +89,15 @@ describe("stats", () => {
     expect(r.outcome).toBe("T");
   });
 });
+
+describe("tendência da mesa", () => {
+  const seq = (s: string) => s.split("") as ("P" | "B" | "T")[];
+  it("gives an entry when no classic pattern is formed, following the dominant side", () => {
+    const m = matchPatterns(seq("PPBPPBPB"));
+    expect(m).toHaveLength(1);
+    expect(m[0]).toMatchObject({ pattern: "Tendência da mesa", side: "player" });
+  });
+  it("is not used when a classic pattern exists", () => {
+    expect(matchPatterns(seq("BPPP")).map((x) => x.pattern)).not.toContain("Tendência da mesa");
+  });
+});

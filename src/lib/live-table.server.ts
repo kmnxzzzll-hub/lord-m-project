@@ -14,7 +14,7 @@ const KEEP_DAYS = 3;
 const CONFIG_BUCKET = "app-config";
 const KEY_PATH = "lynxmetrics.json";
 
-type Admin = (typeof import("@/integrations/supabase/client.server"))["supabaseAdmin"];
+type Admin = ReturnType<typeof import("./admin-client.server").getAdminClient>;
 
 /** API key the admin saved in the panel; falls back to the server setting. */
 export async function readFeedKey(admin: Admin): Promise<string | null> {
@@ -59,8 +59,9 @@ export async function testFeedKey(key: string): Promise<string | null> {
 }
 
 export async function syncLiveRounds(force = false): Promise<void> {
-  if (!process.env["SUPABASE_SERVICE_ROLE_KEY"]) return;
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  if (!(await import("./admin-client.server")).serviceKey()) return;
+  const { getAdminClient } = await import("./admin-client.server");
+    const supabaseAdmin = getAdminClient();
   const { data: claimed, error: claimError } = await supabaseAdmin.rpc("claim_live_feed_sync", {
     _min_interval_ms: force ? 0 : SYNC_INTERVAL_MS,
   });

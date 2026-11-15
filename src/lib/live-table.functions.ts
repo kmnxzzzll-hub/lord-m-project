@@ -48,7 +48,7 @@ export const getLiveTable = createServerFn({ method: "GET" })
           lastSuccessAt: feedRes.data.last_success_at
             ? Date.parse(feedRes.data.last_success_at)
             : null,
-          lastError: process.env["SUPABASE_SERVICE_ROLE_KEY"]
+          lastError: (await import("./admin-client.server")).serviceKey()
             ? feedRes.data.last_error
             : "missing_service_key",
         }
@@ -74,12 +74,13 @@ export const connectLiveTable = createServerFn({ method: "POST" })
       _role: "admin",
     });
     if (!isAdmin) throw new Error("Apenas o administrador pode trocar a chave.");
-    if (!process.env["SUPABASE_SERVICE_ROLE_KEY"])
+    if (!(await import("./admin-client.server")).serviceKey())
       return { ok: false, error: "missing_service_key" };
     const { testFeedKey, saveFeedKey } = await import("./live-table.server");
     const problem = await testFeedKey(data.key);
     if (problem) return { ok: false, error: problem };
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { getAdminClient } = await import("./admin-client.server");
+    const supabaseAdmin = getAdminClient();
     await saveFeedKey(supabaseAdmin, data.key);
     await syncLiveRounds(true);
     return { ok: true, error: null };

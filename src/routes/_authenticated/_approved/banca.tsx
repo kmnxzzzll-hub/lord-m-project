@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { RotateCcw, Wallet } from "lucide-react";
+import { Info, RotateCcw, Wallet } from "lucide-react";
+import { bankPlan, kz as brl, MIN_BET } from "@/lib/bank";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/_approved/banca")({
@@ -21,8 +22,6 @@ export const Route = createFileRoute("/_authenticated/_approved/banca")({
 const KEY = "bacbo:banca";
 interface Plan { bank: number; win: number; loss: number; stake: number; current: number }
 const DEFAULT: Plan = { bank: 10000, win: 15, loss: 10, stake: 2, current: 10000 };
-const brl = (n: number) =>
-  `${n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Kz`;
 
 function BankPage() {
   const [plan, setPlan] = useState<Plan>(DEFAULT);
@@ -34,9 +33,8 @@ function BankPage() {
   useEffect(() => { if (loaded) localStorage.setItem(KEY, JSON.stringify(plan)); }, [plan, loaded]);
 
   const set = (k: keyof Plan) => (v: number) => setPlan((p) => ({ ...p, [k]: Number.isFinite(v) ? v : 0 }));
-  const target = plan.bank * (1 + plan.win / 100);
-  const floor = plan.bank * (1 - plan.loss / 100);
-  const entry = plan.bank * (plan.stake / 100);
+  const calc = bankPlan(plan);
+  const { target, floor, entry } = calc;
   const profit = plan.current - plan.bank;
   const progress = profit >= 0
     ? Math.min(100, (profit / (target - plan.bank || 1)) * 100)
@@ -68,6 +66,18 @@ function BankPage() {
         <Stat label="Entrada" value={brl(entry)} tone="text-foreground" />
         <Stat label="Meta" value={brl(target)} tone="text-success" />
         <Stat label="Limite" value={brl(floor)} tone="text-destructive" />
+      </div>
+
+      <div className="liquid-glass flex gap-2.5 rounded-2xl p-3 text-xs leading-relaxed">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-tie" />
+        <p className="text-foreground/85">
+          {calc.belowMin
+            ? `A aposta mínima da mesa é ${brl(MIN_BET)}. Sua banca não cobre nem uma entrada.`
+            : calc.raisedToMin
+              ? `A aposta mínima da mesa é ${brl(MIN_BET)}, por isso a entrada fica em ${brl(MIN_BET)}. Para apostar ${plan.stake}% da banca, o ideal é ter pelo menos ${brl(calc.minBankForStake)}.`
+              : `Aposte ${brl(entry)} por sinal (mínimo da mesa: ${brl(MIN_BET)}).`}
+          {!calc.belowMin && ` Você tem ${calc.entriesToStop} ${calc.entriesToStop === 1 ? "entrada" : "entradas"} até o Stop-Loss.`}
+        </p>
       </div>
 
       <div className="liquid-glass space-y-3 rounded-[1.75rem] p-4 sm:p-5">

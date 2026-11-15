@@ -88,10 +88,20 @@ export function feedErrorMessage(code: string | null | undefined): string | null
     return "Falta a chave de servidor (service_role) do banco. Sem ela a mesa não sincroniza.";
   if (code.includes("trial_expired"))
     return "O teste da LynxMetrics acabou. Assine um plano para a mesma chave voltar a funcionar.";
+  if (code.includes("subscription_required"))
+    return "A assinatura da LynxMetrics não está ativa. Renove o plano para a mesa voltar.";
+  if (code.includes("payment_pending"))
+    return "O pagamento da LynxMetrics está pendente. Regularize para a mesa voltar.";
+  if (code.includes("key_wrong_api"))
+    return "Essa chave é de outra mesa. Crie uma chave para o Bac Bo Live na LynxMetrics.";
+  if (code.includes("plan_limit"))
+    return "O plano da LynxMetrics não permite esse pedido. Buscando só as rodadas recentes.";
+  if (code.includes("upstream_error") || code.includes("http_5") || code.includes("timeout"))
+    return "A LynxMetrics está instável agora. Tentando de novo em instantes.";
   if (code.includes("401") || code.includes("unauthorized") || code.includes("key_"))
     return "A chave da LynxMetrics foi recusada. Copie a chave do Bac Bo Live no painel da LynxMetrics e cole de novo.";
   if (code.includes("429")) return "Limite de consultas da LynxMetrics atingido. Tentando de novo.";
-  if (code.includes("network"))
+  if (code.includes("network") || code.includes("bad_response"))
     return "A LynxMetrics não respondeu. Tentando de novo em instantes.";
   if (code.includes("missing_credentials"))
     return "Nenhuma chave da LynxMetrics salva. Cole a chave abaixo e toque em Ligar conexão.";

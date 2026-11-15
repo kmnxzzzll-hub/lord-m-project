@@ -41,3 +41,4 @@ use the editor.
 - The `_authenticated` guard reads the local session (`getSession`), not `getUser()`, because a server round-trip on every tab switch froze navigation on phones; data safety comes from RLS on each request.
 - The 3D die is one shared three.js instance in `src/lib/die-engine.ts`, warmed in idle time by the approved layout and re-attached by `Cube3D`, so it never rebuilds WebGL per signal or per tab.
 - App images are bundled files in `src/assets` imported directly (not `.asset.json` pointers), because the owner deploys to Vercel/Netlify where the `/__l5e/` asset paths don't exist.
+- The live table feed calls the LynxMetrics API directly (`x-api-key`) with the key the admin saves in the panel (private `app-config` bucket), because there is no workspace connector for it; the robot only uses the unbroken recent run of rounds (`liveWindow`) and needs at least `MIN_HISTORY` of them before signaling.

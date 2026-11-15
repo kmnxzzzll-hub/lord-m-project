@@ -5,10 +5,13 @@ const API_URL = "https://api.lynxmetrics.com/v1/bacbo-live";
 // The provider itself gives up at 10s; wait a little longer so its own error reaches us.
 const TIMEOUT_MS = 12_000;
 
+/** Network failures and timeouts all surface as the `network` code. */
 const lynxFetch = (path: string, key: string) =>
   fetch(`${API_URL}${path}`, {
     headers: { "x-api-key": key, accept: "application/json" },
     signal: AbortSignal.timeout(TIMEOUT_MS),
+  }).catch(() => {
+    throw new Error("network");
   });
 
 async function errorCode(res: Response): Promise<string> {

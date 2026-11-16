@@ -53,7 +53,7 @@ function BubbleColumn({ side, isPlayer }: { side: "left" | "right"; isPlayer: bo
 
 export function SignalOrb({
   side,
-  signal,
+  signal: _signal,
   phaseStart,
   phaseEnd,
 }: {
@@ -136,40 +136,6 @@ export function SignalOrb({
           style={{ width: `${left * 100}%` }}
         />
       </div>
-      {signal && (
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="relative mt-4 w-full max-w-xs rounded-2xl border border-border/60 bg-background/40 px-3.5 py-3 text-left"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-[11px] font-bold uppercase tracking-[0.14em] text-foreground">
-              {signal.pattern}
-            </span>
-            <span
-              className={cn(
-                "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums",
-                isPlayer ? "bg-player/20 text-player-glow" : "bg-banker/20 text-banker-glow",
-              )}
-            >
-              {signal.probability}%
-            </span>
-          </div>
-          <ul className="mt-1.5 space-y-1 text-[11px] leading-snug text-muted-foreground">
-            {signal.reasons.slice(0, 3).map((r) => (
-              <li key={r} className="flex gap-1.5">
-                <span aria-hidden className="mt-[5px] h-1 w-1 shrink-0 rounded-full bg-muted-foreground/60" />
-                <span>{r}</span>
-              </li>
-            ))}
-            <li className="flex gap-1.5">
-              <span aria-hidden className="mt-[5px] h-1 w-1 shrink-0 rounded-full bg-tie" />
-              <span>Empate conta como Green</span>
-            </li>
-          </ul>
-        </motion.div>
-      )}
     </motion.div>
   );
 }

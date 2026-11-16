@@ -20,8 +20,20 @@ export function Scoreboard() {
     { label: "Sequência", value: s.best, tone: "text-tie" },
   ];
 
-  const recentReds = results.slice(-3).filter((r) => !r.green).length;
-  const temp = recentReds >= 2 || (s.total > 5 && s.rate < 50) ? "red" : "green";
+  const recent = results.slice(-8);
+  const recentRate = recent.length
+    ? recent.filter((r) => r.green).length / recent.length
+    : 0.5;
+  let quality: "boa" | "normal" | "fria" = "normal";
+  if (recentRate >= 0.65) quality = "boa";
+  else if (recentRate <= 0.4 || results.slice(-3).every((r) => !r.green)) quality = "fria";
+
+  const qualityClass =
+    quality === "boa"
+      ? "bg-success/15 text-success"
+      : quality === "fria"
+        ? "bg-destructive/15 text-destructive"
+        : "bg-tie/15 text-tie";
 
   return (
     <div className="space-y-2">
@@ -38,14 +50,9 @@ export function Scoreboard() {
         ))}
       </div>
       <div className="flex justify-center">
-        <span
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold",
-            temp === "green" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive",
-          )}
-        >
-          <span className={cn("h-2 w-2 rounded-full", temp === "green" ? "bg-success" : "bg-destructive")} />
-          Temperatura: {temp === "green" ? "Padrão respeitado" : "Mesa instável"}
+        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold", qualityClass)}>
+          <span className={cn("h-2 w-2 rounded-full", quality === "boa" ? "bg-success" : quality === "fria" ? "bg-destructive" : "bg-tie")} />
+          Qualidade da mesa: {quality === "boa" ? "Boa" : quality === "fria" ? "Fria" : "Normal"}
         </span>
       </div>
     </div>
@@ -115,19 +122,19 @@ export function ResultBanner() {
             <motion.div
               key={show.key}
               role="status"
-              initial={{ opacity: 0, y: -20, width: 120, height: 36, borderRadius: 999 }}
-              animate={{ opacity: 1, y: 0, width: 300, height: 60 }}
-              exit={{ opacity: 0, y: -16, width: 120, height: 36 }}
+              initial={{ opacity: 0, y: -40, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 380, damping: 28 }}
               className={cn(
-                "liquid-glass flex items-center gap-3 overflow-hidden rounded-full pl-2 pr-5",
+                "liquid-glass flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 shadow-2xl",
                 glow,
               )}
+              style={{ width: "min(360px, 92vw)" }}
             >
               <motion.span
-                initial={{ scale: 0, rotate: -40 }}
-                animate={{ scale: [0, 1.2, 1], rotate: 0 }}
-                transition={{ delay: 0.15, duration: 0.5 }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
                 className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-background shadow-lg",
                   !show.green
@@ -139,34 +146,16 @@ export function ResultBanner() {
                         : "ball-banker",
                 )}
               >
-                {show.green ? (
-                  <Check className="h-5 w-5" strokeWidth={3} />
-                ) : (
-                  <X className="h-5 w-5" strokeWidth={3} />
-                )}
+                {show.green ? <Check className="h-5 w-5" strokeWidth={3} /> : <X className="h-5 w-5" strokeWidth={3} />}
               </motion.span>
-              <motion.div
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-                className="min-w-0 leading-tight"
-              >
-                <p
-                  className={cn(
-                    "font-display text-sm font-extrabold",
-                    show.green ? "text-success" : "text-destructive",
-                  )}
-                >
-                  {show.green ? (show.tie ? "GREEN (Empate)" : "GREEN DIRETO") : "LOSS"}
+              <div className="min-w-0 leading-tight">
+                <p className={cn("font-display text-sm font-extrabold", show.green ? "text-success" : "text-destructive")}>
+                  {show.green ? (show.tie ? "GREEN (Empate)" : "GREEN") : "RED"}
                 </p>
                 <p className="truncate text-xs text-foreground/80">
-                  {show.green
-                    ? show.tie
-                      ? "Empate · proteção de banca"
-                      : `Green no ${sideName}`
-                    : `Entrada no ${sideName} não bateu`}
+                  {show.green ? `No ${sideName}` : `Entrada no ${sideName} não bateu`}
                 </p>
-              </motion.div>
+              </div>
             </motion.div>
           </div>
         )}

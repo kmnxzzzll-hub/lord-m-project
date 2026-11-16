@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { Side } from "@/lib/bacbo-engine";
+import { PATTERN_EXPLANATION } from "@/lib/bacbo-engine";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +70,7 @@ export function SignalOrb({
   const isPlayer = side === "player";
   const left = Math.max(0, Math.min(1, (phaseEnd - now) / (phaseEnd - phaseStart)));
   const secondsLeft = Math.max(0, Math.ceil((phaseEnd - now) / 1000));
+  const explanation = PATTERN_EXPLANATION[pattern] ?? pattern;
 
   return (
     <motion.div
@@ -129,6 +131,9 @@ export function SignalOrb({
       </motion.h2>
       <p className="relative mt-1 text-xs font-semibold text-muted-foreground">
         Estratégia: <span className="text-foreground">{pattern}</span> · Empate = Green
+      </p>
+      <p className="relative mt-1 max-w-xs text-center text-[11px] text-muted-foreground/90">
+        {explanation}
       </p>
       <p className="relative mt-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:mt-4">
         Aposte agora · <span className="tabular-nums text-foreground">{secondsLeft}s</span>

@@ -48,26 +48,38 @@ function HistoryPage() {
         <div className="liquid-glass rounded-[1.75rem] p-8 text-center">
           <p className="font-display text-lg font-bold">Nenhum sinal ainda</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Os sinais que a plataforma enviar aparecem aqui em mini cards.
+            Os sinais que a plataforma enviar aparecem aqui.
           </p>
         </div>
       ) : (
         <div key={cycleKey} className="liquid-glass rounded-[1.75rem] p-4 sm:p-5">
-          <ul className="grid grid-cols-5 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
+          <ul className="flex flex-wrap justify-center gap-2.5 sm:gap-3">
             {results.map((r) => (
               <motion.li
                 key={r.key}
                 layoutId={`card-${r.key}`}
                 onClick={() => setSelected(r.key)}
-                className={cn(
-                  "flex aspect-square cursor-pointer items-center justify-center rounded-2xl border text-xs font-bold transition-transform active:scale-95",
-                  r.green
-                    ? "border-success/40 bg-success/15 text-success"
-                    : "border-destructive/40 bg-destructive/15 text-destructive",
-                )}
-                whileHover={{ scale: 1.05 }}
+                className="cursor-pointer transition-transform active:scale-95"
+                whileHover={{ scale: 1.08 }}
               >
-                {r.green ? "G" : "R"}
+                <span
+                  className={cn(
+                    "relative inline-flex h-11 w-11 items-center justify-center rounded-full font-display text-sm font-bold text-foreground shadow-md sm:h-12 sm:w-12",
+                    r.green ? "ball-player" : "ball-banker",
+                  )}
+                  style={{
+                    // Force green / red look for result, not side colors
+                    background: r.green
+                      ? "radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35), transparent 45%), linear-gradient(145deg, #22c55e, #16a34a)"
+                      : "radial-gradient(circle at 30% 25%, rgba(255,255,255,0.25), transparent 45%), linear-gradient(145deg, #ef4444, #dc2626)",
+                    boxShadow: r.green
+                      ? "0 4px 14px -4px rgba(34,197,94,0.55)"
+                      : "0 4px 14px -4px rgba(239,68,68,0.55)",
+                  }}
+                >
+                  <span className="absolute left-[22%] top-[14%] h-[22%] w-[34%] rounded-full bg-foreground/40 blur-[1px]" />
+                  <span className="relative drop-shadow">{r.green ? "G" : "R"}</span>
+                </span>
               </motion.li>
             ))}
           </ul>

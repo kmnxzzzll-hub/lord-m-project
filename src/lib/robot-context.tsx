@@ -23,28 +23,25 @@ import {
   type SessionSignal,
 } from "@/lib/robot-schedule";
 import { loadHistory, saveHistory } from "@/lib/session-history";
+import { scoreSignals } from "@/lib/scoreboard";
 
 interface RobotState extends RobotView {
   running: boolean;
   maintenance: boolean;
   isAdmin: boolean;
-  /** Real rounds received from the live table, oldest first. */
   rounds: LiveRound[];
-  /** Server time minus this device's time; phase times below are already in device time. */
   clockOffset: number;
-  /** Feed health, admin only. */
   feed: { lastSuccessAt: number | null; lastError: string | null } | null;
-  /** True when the live table could not be read on the last attempt. */
   tableError: boolean;
-  /** Signals generated during this login session, newest first. */
   sessionSignals: SessionSignal[];
   toggling: boolean;
-  /** Admin only: switches the robot on/off for everyone. */
   toggle: () => void;
+  pausedUntil: number | null;
 }
 
 const RobotCtx = createContext<RobotState | null>(null);
 const NO_ROUNDS: LiveRound[] = [];
+const PAUSE_MS = 5 * 60 * 1000;
 
 export function RobotProvider({
   userId,
@@ -63,19 +60,23 @@ export function RobotProvider({
   const maintenance = settings?.maintenance ?? false;
   const active = running && !maintenance;
 
-  // Poll the live table every 2s while the robot runs so a new round shows almost at once.
-  const live = useQuery({ ...liveTableQuery, refetchInterval: active ? 2_000 : 20_000 });
+  const [pausedUntil, setPausedUntil] = useState<number | null>(null);
+  const isPaused = pausedUntil !== null && Date.now() < pausedUntil;
+
+  // Only poll live table when the robot is actually running
+  const live = useQuery({
+    ...liveTableQuery,
+    refetchInterval: active && !isPaused ? 2_000 : false,
+  });
   const allRounds = live.data?.rounds ?? NO_ROUNDS;
   const clockOffset = live.data?.clockOffset ?? 0;
 
   const [now, setNow] = useState(() => Date.now());
-  // Tick so a table that stops sending is noticed even without new data.
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now() + clockOffset), 5_000);
     return () => clearInterval(id);
   }, [clockOffset]);
 
-  // Only the live run of rounds counts; hours-old rounds from a past connection are hidden.
   const liveRun = liveWindow(allRounds, now);
   const windowStart = allRounds.length - liveRun.length;
   const rounds = useMemo(
@@ -92,15 +93,13 @@ export function RobotProvider({
   const minConfidence = AUTO_CONFIDENCE;
 
   const cfg = useMemo<ScheduleConfig | null>(
-    () => (active ? { startedAt, minConfidence } : null),
-    [active, startedAt, minConfidence],
+    () => (active && !isPaused ? { startedAt, minConfidence } : null),
+    [active, isPaused, startedAt, minConfidence],
   );
 
-  // All timing runs on the server clock so every device flips at the same moment.
   useEffect(() => setNow(Date.now() + clockOffset), [cfg, allRounds, clockOffset]);
   const view = useMemo(() => robotView(cfg, rounds, now), [cfg, rounds, now]);
 
-  // Re-render exactly when the view changes on its own (signal reveal, hold timeout).
   useEffect(() => {
     if (!Number.isFinite(view.wakeAt)) return;
     const wait = view.wakeAt - (Date.now() + clockOffset) + 30;
@@ -108,7 +107,6 @@ export function RobotProvider({
     return () => clearTimeout(t);
   }, [view.wakeAt, clockOffset]);
 
-  // Record every signal revealed since this login.
   useEffect(() => {
     if (!cfg) return;
     const found = signalsBetween(cfg, rounds, Math.max(sessionStart, cfg.startedAt), now);
@@ -121,8 +119,30 @@ export function RobotProvider({
     });
   }, [cfg, rounds, now, sessionStart, userId]);
 
+  // Auto-pause after 3 consecutive losses
+  useEffect(() => {
+    if (!active || isPaused) return;
+    const results = scoreSignals(sessionSignals, rounds);
+    const last3 = results.slice(-3);
+    if (last3.length === 3 && last3.every((r) => !r.green)) {
+      const until = Date.now() + PAUSE_MS;
+      setPausedUntil(until);
+      // Force robot off in settings so admin cannot re-enable immediately
+      void supabase
+        .from("robot_settings")
+        .update({
+          running: false,
+          started_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", 1);
+      toast.error("MESA MANIPULANDO, SAI NÃO FIQUE TEIMOSO. Robô pausado 5 minutos.");
+    }
+  }, [sessionSignals, rounds, active, isPaused]);
+
   const mutation = useMutation({
     mutationFn: async (on: boolean) => {
+      if (isPaused && on) throw new Error("paused");
       const stamp = new Date(Date.now() + clockOffset).toISOString();
       const patch = {
         running: on,
@@ -144,13 +164,19 @@ export function RobotProvider({
       if (data.running) void queryClient.invalidateQueries({ queryKey: liveTableQuery.queryKey });
       toast.success(data.running ? "Robô ligado para todos os usuários" : "Robô desligado");
     },
-    onError: () => toast.error("Não foi possível alterar o robô."),
+    onError: (e) => {
+      if (e instanceof Error && e.message === "paused") {
+        toast.error("Robô em pausa automática. Aguarde 5 minutos.");
+      } else {
+        toast.error("Não foi possível alterar o robô.");
+      }
+    },
   });
 
   const toggle = useCallback(() => {
-    if (!isAdmin || mutation.isPending) return;
+    if (!isAdmin || mutation.isPending || isPaused) return;
     mutation.mutate(!running);
-  }, [isAdmin, mutation, running]);
+  }, [isAdmin, mutation, running, isPaused]);
 
   const tableError = live.isError;
   const feed = live.data?.feed ?? null;
@@ -158,11 +184,10 @@ export function RobotProvider({
   const value = useMemo<RobotState>(
     () => ({
       ...view,
-      // Expose phase times in this device's clock for progress bars.
       phaseStart: view.phaseStart - clockOffset,
       phaseEnd: view.phaseEnd - clockOffset,
       wakeAt: view.wakeAt - clockOffset,
-      running,
+      running: running && !isPaused,
       maintenance,
       isAdmin,
       rounds,
@@ -172,11 +197,13 @@ export function RobotProvider({
       sessionSignals,
       toggling: mutation.isPending,
       toggle,
+      pausedUntil,
     }),
     [
       view,
       clockOffset,
       running,
+      isPaused,
       maintenance,
       isAdmin,
       rounds,
@@ -185,6 +212,7 @@ export function RobotProvider({
       sessionSignals,
       mutation.isPending,
       toggle,
+      pausedUntil,
     ],
   );
 

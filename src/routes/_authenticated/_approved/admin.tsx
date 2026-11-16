@@ -305,29 +305,40 @@ function RobotControls() {
 
 function FeedStatus() {
   const queryClient = useQueryClient();
-  const { data } = useQuery(liveTableQuery);
+  const { data, isError } = useQuery(liveTableQuery);
   const feed = data?.feed;
   const errorMsg = feedErrorMessage(feed?.lastError);
+  const connected = !!feed?.lastSuccessAt && !feed?.lastError;
   const [key, setKey] = useState("");
   const [saving, setSaving] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const connect = useServerFn(connectLiveTable);
 
   async function onConnect(e: FormEvent) {
     e.preventDefault();
-    if (!key.trim()) return;
+    setLocalError(null);
+    const trimmed = key.trim();
+    if (trimmed.length < 8) {
+      setLocalError("A chave parece muito curta. Verifica se copiaste bem.");
+      return;
+    }
     setSaving(true);
     try {
-      const res = await connect({ data: { key: key.trim() } });
+      const res = await connect({ data: { key: trimmed } });
       if (!res.ok) {
-        toast.error(feedErrorMessage(res.error) ?? "Não foi possível conectar a chave.");
+        const msg = feedErrorMessage(res.error) ?? "Não foi possível conectar a chave.";
+        setLocalError(msg);
+        toast.error(msg);
         return;
       }
       setKey("");
-      toast.success("Mesa conectada com a nova chave");
+      toast.success("Mesa conectada! A receber resultados.");
       void queryClient.invalidateQueries({ queryKey: liveTableQuery.queryKey });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao conectar.");
+      const msg = err instanceof Error ? err.message : "Erro ao conectar.";
+      setLocalError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -336,32 +347,47 @@ function FeedStatus() {
   return (
     <div className="liquid-glass space-y-3 rounded-2xl p-4 sm:p-5">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie">
+        <div className={cn(
+          "flex h-10 w-10 items-center justify-center rounded-xl border",
+          connected
+            ? "border-success/30 bg-success/10 text-success"
+            : "border-destructive/30 bg-destructive/10 text-destructive"
+        )}>
           <KeyRound className="h-5 w-5" />
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="font-semibold">Chave da API (LynxMetrics)</p>
           <p className="text-xs text-muted-foreground">
-            {errorMsg ?? (feed?.lastSuccessAt ? "Mesa a receber dados." : "Cole a chave para ligar a mesa.")}
+            {connected
+              ? "Mesa ligada e a receber dados."
+              : errorMsg || (isError ? "Erro ao ler o estado da mesa." : "Cole a chave para ligar a mesa.")}
           </p>
         </div>
       </div>
-      <form onSubmit={onConnect} className="flex gap-2">
-        <input
-          type="password"
-          placeholder="Cole a chave da LynxMetrics"
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-          className="liquid-glass h-11 flex-1 rounded-xl px-4 text-sm outline-none placeholder:text-muted-foreground"
-        />
-        <button
-          type="submit"
-          disabled={saving || !key.trim()}
-          className="flex h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-        >
-          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-          Ligar
-        </button>
+
+      <form onSubmit={onConnect} className="space-y-2">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Cole a chave da LynxMetrics aqui"
+            value={key}
+            onChange={(e) => { setKey(e.target.value); setLocalError(null); }}
+            className="liquid-glass h-11 flex-1 rounded-xl px-4 text-sm outline-none placeholder:text-muted-foreground"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <button
+            type="submit"
+            disabled={saving || key.trim().length < 8}
+            className="flex h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+          >
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Ligar mesa
+          </button>
+        </div>
+        {localError && (
+          <p className="text-xs text-destructive">{localError}</p>
+        )}
       </form>
     </div>
   );

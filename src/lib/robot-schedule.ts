@@ -1,15 +1,14 @@
 /**
- * Shared robot timeline driven by the real Bac Bo Live table. The admin switches the robot on
- * (robot_settings.running + started_at); after every real round that settles, each client runs
- * the pattern engine on the same stored rounds, so all users see the same signal at the same time.
+ * Shared robot timeline driven by the real Bac Bo Live table.
+ * Signals reveal earlier; only entry + 1 gale.
  */
 import { detectSignal, type Round, type Side, type Signal } from "./bacbo-engine";
 import type { LiveRound } from "./live-table";
 
 /** Typical time between two results at the Bac Bo Live table (measured ~33-38s). */
 export const ROUND_MS = 35_000;
-/** Automatic analysis: the signal is ready this long after the round settles (no admin setting). */
-export const ANALYSIS_MS = 1_500;
+/** Signal is ready almost immediately after the round settles (early reveal). */
+export const ANALYSIS_MS = 400;
 /** Estimated moment, after a round settles, when bets for the next round close. */
 export const BET_CLOSE_MS = 24_000;
 /** A round reaching us later than this after settling leaves too little time to bet: no signal. */
@@ -20,11 +19,6 @@ const HISTORY = 60;
 /** Past real rounds the robot needs before it reads a pattern. */
 export const MIN_HISTORY = 5;
 
-/**
- * The rounds that count as "live": the unbroken recent run ending in a round settled within
- * STALE_MS. Old rounds left in the database from an earlier connection are dropped, so a
- * disconnected table shows nothing instead of hours-old results.
- */
 export function liveWindow(rounds: LiveRound[], now: number): LiveRound[] {
   const last = rounds[rounds.length - 1];
   if (!last || now - last.settledAt > STALE_MS) return [];
@@ -33,17 +27,11 @@ export function liveWindow(rounds: LiveRound[], now: number): LiveRound[] {
   return start === 0 ? rounds : rounds.slice(start);
 }
 
-/** When the signal after this round shows: right after the analysis, or as soon as the round arrived. */
+/** When the signal after this round shows: almost immediately. */
 export const revealTime = (r: LiveRound) => Math.max(r.settledAt + ANALYSIS_MS, r.receivedAt ?? 0);
-/** The round arrived too late to bet on the next one. Same answer on every device. */
 export const arrivedLate = (r: LiveRound) =>
   r.receivedAt !== undefined && r.receivedAt - r.settledAt > LATE_MS;
 
-/**
- * Automatic strength: every recognized pattern (Surf, Xadrez, Parzinho, 3-1-3, Rampa) becomes
- * a signal. There is no admin setting, because higher filters left the robot silent for long
- * stretches on the real table.
- */
 export const AUTO_CONFIDENCE = 60;
 
 export interface ScheduleConfig {
@@ -51,40 +39,31 @@ export interface ScheduleConfig {
   minConfidence: number;
 }
 
-export type RobotPhase = "off" | "analyzing" | "signal";
-/**
- * Why the robot is waiting: no live table, still gathering past rounds, waiting for the next
- * round, no pattern, or bets closed and the entry's result is on its way.
- */
+export type RobotPhase = "off" | "analyzing" | "signal" | "paused";
 export type WaitReason =
   | "no_connection"
   | "collecting"
   | "next_round"
   | "no_pattern"
   | "result"
+  | "paused"
   | null;
 
 export interface RobotView {
   phase: RobotPhase;
-  /** Id of the real round the current analysis/signal follows (or a waiting key). */
   key: string;
   phaseStart: number;
   phaseEnd: number;
-  /** Next moment the view changes on its own, without a new round. */
   wakeAt: number;
-  /** True while there is no fresh round to analyze or no pattern for the next one. */
   waiting: boolean;
   reason: WaitReason;
-  /** Current entry; also kept while bets are closed and its result is pending. */
   signal: Signal | null;
-  /** Real rounds the current reading is based on, oldest first. */
   history: Round[];
   lastRound: LiveRound | null;
 }
 
 const signalCache = new Map<string, Signal | null>();
 
-/** Signal for the round that follows rounds[index], from the real rounds up to it. */
 export function signalAfter(
   rounds: LiveRound[],
   index: number,
@@ -132,11 +111,9 @@ export function robotView(
     reason,
   });
 
-  // No live table: nothing received, or the table went quiet.
   if (!lastRound || now - lastRound.settledAt > STALE_MS) {
     return waitFor(Math.max(cfg.startedAt, lastRound?.settledAt ?? 0), "no_connection", "no_connection");
   }
-  // Nothing settled since the robot was switched on: wait for the next real round.
   if (lastRound.settledAt < cfg.startedAt) {
     const reason = rounds.length < MIN_HISTORY ? "collecting" : "next_round";
     return waitFor(lastRound.settledAt, `wait:${cfg.startedAt}`, reason);
@@ -152,7 +129,6 @@ export function robotView(
   const common = { history, lastRound, key: lastRound.id };
 
   if (signal && now >= revealAt) {
-    // Bets closed: the entry leaves the screen and the robot waits for its result.
     if (now >= closeAt) {
       return {
         ...common,
@@ -188,7 +164,6 @@ export function robotView(
       signal: null,
     };
   }
-  // No entry for the next round (no pattern, too few rounds, or the round came in late).
   return {
     ...common,
     phase: "analyzing",
@@ -207,13 +182,12 @@ export interface SessionSignal {
   at: number;
 }
 
-/** Signals whose reveal time falls in [from, to], newest first (at most `limit`). */
 export function signalsBetween(
   cfg: ScheduleConfig,
   rounds: LiveRound[],
   from: number,
   to: number,
-  limit = 60,
+  limit = 20,
 ): SessionSignal[] {
   const out: SessionSignal[] = [];
   for (let i = rounds.length - 1; i >= 0 && out.length < limit; i--) {
@@ -229,11 +203,10 @@ export function signalsBetween(
   return out;
 }
 
-/** Merges new signals into the session list: deduped by key, newest first. */
 export function mergeSignals(
   existing: SessionSignal[],
   incoming: SessionSignal[],
-  limit = 60,
+  limit = 20,
 ): SessionSignal[] {
   const map = new Map<string, SessionSignal>();
   for (const s of [...existing, ...incoming]) map.set(s.key, s);

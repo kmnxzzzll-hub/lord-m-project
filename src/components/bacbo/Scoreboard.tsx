@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, X, AlertTriangle, PartyPopper } from "lucide-react";
+import { Check, X, PartyPopper } from "lucide-react";
 import { useRobot } from "@/lib/robot-context";
 import { scoreSignals, summarize, type SignalResult } from "@/lib/scoreboard";
 import { cn } from "@/lib/utils";
@@ -66,7 +66,7 @@ export function ResultBanner() {
   const results = useSessionResults();
   const seen = useRef<Set<string> | null>(null);
   const [show, setShow] = useState<SignalResult | null>(null);
-  const [streakBanner, setStreakBanner] = useState<"greens" | "reds" | null>(null);
+  const [streakBanner, setStreakBanner] = useState<"greens" | null>(null);
 
   useEffect(() => {
     if (!seen.current) {
@@ -78,10 +78,8 @@ export function ResultBanner() {
     const latest = fresh.filter((r) => Date.now() - r.at < RESULT_FRESH_MS).at(-1);
     if (latest) setShow(latest);
 
-    const last3 = results.slice(-3);
-    if (last3.length === 3 && last3.every((r) => !r.green)) {
-      setStreakBanner("reds");
-    } else if (results.slice(-5).length === 5 && results.slice(-5).every((r) => r.green)) {
+    // Only celebrate green streaks — 3 reds pause silently (no animation)
+    if (results.slice(-5).length === 5 && results.slice(-5).every((r) => r.green)) {
       setStreakBanner("greens");
     }
   }, [results]);
@@ -162,7 +160,7 @@ export function ResultBanner() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {streakBanner && (
+        {streakBanner === "greens" && (
           <div
             className="pointer-events-none fixed inset-x-0 top-20 z-50 flex justify-center px-4"
             style={{ paddingTop: "env(safe-area-inset-top)" }}
@@ -173,18 +171,8 @@ export function ResultBanner() {
               exit={{ opacity: 0, y: -10 }}
               className="liquid-glass flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold shadow-lg"
             >
-              {streakBanner === "greens" ? (
-                <>
-                  <PartyPopper className="h-5 w-5 text-success" />
-                  <span>💰 Surra no branco, dinheiro no bolso 💰</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-2xl">😭</span>
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                  <span>MESA MANIPULANDO, SAI NÃO FIQUE TEIMOSO</span>
-                </>
-              )}
+              <PartyPopper className="h-5 w-5 text-success" />
+              <span>💰 Surra no branco, dinheiro no bolso 💰</span>
             </motion.div>
           </div>
         )}

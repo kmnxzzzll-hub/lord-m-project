@@ -1,13 +1,11 @@
 /**
  * Bac Bo pattern engine — expanded classic strategy set.
- * Patterns follow the playbooks used in Bac Bo strategy e-books:
- * Surf, Xadrez, Parzinho, Rampa, Perninhas, Espelho, Inversão, 3-1-3, 3-2-3, etc.
- * Only signals on clear patterns (no forced entries).
+ * Only entry + 1 gale. No G2.
  */
 
 export type Outcome = "P" | "B" | "T";
 export type Side = "player" | "banker";
-export type SignalResult = "green_g0" | "green_g1" | "green_g2" | "red";
+export type SignalResult = "green_g0" | "green_g1" | "red";
 
 export interface Round {
   p: [number, number];
@@ -47,7 +45,6 @@ export function seedHistory(n = 40, rng: () => number = Math.random): Round[] {
 const toSide = (o: "P" | "B"): Side => (o === "P" ? "player" : "banker");
 const opposite = (o: "P" | "B"): "P" | "B" => (o === "P" ? "B" : "P");
 
-/** Groups non-tie outcomes into runs, oldest first. The last run may still be growing. */
 export function toRuns(outcomes: Outcome[]): Run[] {
   const runs: Run[] = [];
   for (const o of outcomes) {
@@ -59,16 +56,14 @@ export function toRuns(outcomes: Outcome[]): Run[] {
   return runs;
 }
 
-/** Every clear pattern that currently matches, strongest first. No forced fallback. */
 export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
   const runs = toRuns(outcomes);
   const n = runs.length;
   const matches: PatternMatch[] = [];
   if (n === 0) return matches;
   const cur = runs[n - 1]!;
-  const at = (i: number) => runs[n - 1 - i]!; // 0 = current run
+  const at = (i: number) => runs[n - 1 - i]!;
 
-  // Surf / Tendência longa: 3+ do mesmo lado
   if (cur.len >= 3) {
     matches.push({
       side: toSide(cur.side),
@@ -77,7 +72,6 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
     });
   }
 
-  // Xadrez 1-1-1: 4+ alternâncias simples → quebrar para o oposto
   let singles = 0;
   for (let i = 0; i < n && at(i).len === 1; i++) singles++;
   if (singles >= 4) {
@@ -88,7 +82,6 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
     });
   }
 
-  // Parzinho 2-2
   if (n >= 3 && at(1).len === 2 && at(2).len === 2) {
     if (cur.len === 1) {
       matches.push({ side: toSide(cur.side), pattern: "Parzinho 2-2", confidence: 74 });
@@ -97,12 +90,10 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
     }
   }
 
-  // Parzinho 2-1-2
   if (n >= 4 && at(1).len === 1 && at(2).len === 2 && at(3).len === 2) {
     matches.push({ side: toSide(cur.side), pattern: "Parzinho 2-1-2", confidence: 71 });
   }
 
-  // 3-1-3
   if (n >= 3 && at(2).len === 3 && at(1).len === 1 && cur.side === at(2).side && cur.len < 3) {
     matches.push({
       side: toSide(cur.side),
@@ -111,7 +102,6 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
     });
   }
 
-  // 3-2-3
   if (n >= 3 && at(2).len === 3 && at(1).len === 2 && cur.side === at(2).side && cur.len < 3) {
     matches.push({
       side: toSide(cur.side),
@@ -120,7 +110,6 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
     });
   }
 
-  // Rampa / Pirâmide crescente
   if (n >= 4) {
     const a = at(3).len;
     if (at(2).len === a + 1 && at(1).len === a + 2 && cur.len < a + 3) {
@@ -128,7 +117,6 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
     }
   }
 
-  // Perninhas (sequências curtas alternadas 2-1-2-1 ou similar)
   if (n >= 4 && at(0).len <= 2 && at(1).len <= 2 && at(2).len <= 2 && at(3).len <= 2) {
     const alternating = at(0).side !== at(1).side && at(1).side !== at(2).side;
     if (alternating) {
@@ -140,7 +128,6 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
     }
   }
 
-  // Espelho / Espelhamento (padrão que se repete)
   if (n >= 6) {
     const recent = runs.slice(-6);
     const firstHalf = recent.slice(0, 3).map((r) => r.side + r.len).join("");
@@ -154,7 +141,6 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
     }
   }
 
-  // Inversão após sequência longa quebrada
   if (n >= 2 && at(1).len >= 4 && cur.len === 1) {
     matches.push({
       side: toSide(cur.side),
@@ -166,7 +152,6 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
   return matches.sort((x, y) => y.confidence - x.confidence);
 }
 
-/** Human-readable explanation for each pattern. */
 export const PATTERN_EXPLANATION: Record<string, string> = {
   "Surf de tendência": "Surf: 3 ou mais vitórias seguidas do mesmo lado — seguir a tendência",
   "Xadrez 1-1-1": "Xadrez 1-1-1: alternância perfeita de lados há 4+ rodadas — quebrar",
@@ -180,10 +165,8 @@ export const PATTERN_EXPLANATION: Record<string, string> = {
   "Inversão": "Inversão: sequência longa quebrada — seguir o novo lado",
 };
 
-/** Decided rounds the fallback trend reading looks at. */
 export const TREND_WINDOW = 8;
 
-/** Tie protection: long drought or a very recent tie means cover the tie with extra care. */
 export function tieAlert(outcomes: Outcome[]): boolean {
   const lastTie = outcomes.lastIndexOf("T");
   const since = lastTie === -1 ? outcomes.length : outcomes.length - 1 - lastTie;
@@ -197,10 +180,6 @@ export function detectSignal(history: Round[], minConfidence: number): Signal | 
   return { ...best, tieAlert: tieAlert(outcomes) };
 }
 
-/**
- * Resolves an entry against the next rounds: up to 3 attempts (entry + 2 gales).
- * A tie counts as green because the tie is always covered.
- */
 export function resolveAttempt(side: Side, outcome: Outcome): "win" | "tie" | "loss" {
   if (outcome === "T") return "tie";
   return toSide(outcome) === side ? "win" : "loss";
@@ -208,21 +187,21 @@ export function resolveAttempt(side: Side, outcome: Outcome): "win" | "tie" | "l
 
 export function resultFor(attemptIndex: number, won: boolean): SignalResult {
   if (!won) return "red";
-  return (["green_g0", "green_g1", "green_g2"] as const)[attemptIndex] ?? "green_g2";
+  return (["green_g0", "green_g1"] as const)[attemptIndex] ?? "red";
 }
 
 export function resolveSignal(
   side: Side,
   next: Outcome[],
 ): { result: SignalResult; tieHit: boolean; used: number } {
-  for (let i = 0; i < Math.min(3, next.length); i++) {
+  // Only entry + 1 gale
+  for (let i = 0; i < Math.min(2, next.length); i++) {
     const r = resolveAttempt(side, next[i]!);
     if (r !== "loss") return { result: resultFor(i, true), tieHit: r === "tie", used: i + 1 };
   }
-  return { result: "red", tieHit: false, used: Math.min(3, next.length) };
+  return { result: "red", tieHit: false, used: Math.min(2, next.length) };
 }
 
-/** Display distribution for Jogador / Casa / Empate, from recent frequency plus the active pattern. */
 export function distribution(history: Round[], match?: PatternMatch | null) {
   const recent = history.slice(-20);
   const total = recent.length || 1;
@@ -249,17 +228,14 @@ export interface DayStats {
   streak: number;
   g0: number;
   g1: number;
-  g2: number;
   reds: number;
 }
 
-/** results ordered newest first */
 export function computeStats(results: SignalResult[]): DayStats {
   const g0 = results.filter((r) => r === "green_g0").length;
   const g1 = results.filter((r) => r === "green_g1").length;
-  const g2 = results.filter((r) => r === "green_g2").length;
   const reds = results.filter((r) => r === "red").length;
-  const greens = g0 + g1 + g2;
+  const greens = g0 + g1;
   let streak = 0;
   for (const r of results) {
     if (r === "red") break;
@@ -272,7 +248,6 @@ export function computeStats(results: SignalResult[]): DayStats {
     streak,
     g0,
     g1,
-    g2,
     reds,
   };
 }
@@ -280,6 +255,5 @@ export function computeStats(results: SignalResult[]): DayStats {
 export const RESULT_LABEL: Record<SignalResult, string> = {
   green_g0: "GREEN DIRETO",
   green_g1: "GREEN G1",
-  green_g2: "GREEN G2",
   red: "RED",
 };

@@ -15,10 +15,6 @@ export const Route = createFileRoute("/_authenticated/_approved/perfil")({
     meta: [
       { title: "Perfil — Bac Bo Live" },
       { name: "description", content: "Seus dados de conta no robô Bac Bo Live." },
-      { property: "og:title", content: "Perfil — Bac Bo Live" },
-      { property: "og:description", content: "Dados da sua conta." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ProfilePage,
@@ -40,7 +36,6 @@ function ProfilePage() {
     try {
       const path = await uploadAvatar(profile.id, file, avatar);
       await queryClient.ensureQueryData(avatarUrlQuery(path)).catch(() => null);
-      // Store the new photo in the shared account cache, so every page (and coming back here) shows it.
       const key = myAccountQuery(profile.id).queryKey;
       await queryClient.cancelQueries({ queryKey: key });
       queryClient.setQueryData<MyAccount>(key, (old) =>
@@ -64,13 +59,13 @@ function ProfilePage() {
     <div className="mx-auto space-y-3 pt-2 sm:space-y-4 sm:pt-3 lg:max-w-3xl">
       <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">Perfil</h1>
 
-      <div className="glass relative overflow-hidden rounded-[1.75rem] p-5 text-center sm:p-6">
-        <div className="absolute inset-x-0 top-0 h-20 sm:h-24 bg-gradient-to-r from-player/30 via-tie/20 to-banker/30" />
-        <div className="relative mx-auto mt-4 h-20 w-20 sm:mt-6 sm:h-24 sm:w-24">
+      <div className="liquid-glass relative overflow-hidden rounded-[1.75rem] p-5 text-center sm:p-6">
+        <div className="absolute inset-0 bg-gradient-to-br from-player/20 via-transparent to-banker/20 backdrop-blur-xl" />
+        <div className="relative mx-auto mt-2 h-24 w-24 sm:mt-4 sm:h-28 sm:w-28">
           <Avatar
             value={avatar}
             name={profile.name}
-            className="h-20 w-20 border-4 sm:h-24 sm:w-24 border-background shadow-xl"
+            className="h-24 w-24 border-4 sm:h-28 sm:w-28 border-background shadow-xl"
             textClass="text-3xl"
           />
           <button
@@ -112,7 +107,7 @@ function ProfilePage() {
         </div>
       </div>
 
-      <div className="glass divide-y divide-border rounded-[1.5rem]">
+      <div className="liquid-glass divide-y divide-border rounded-[1.5rem]">
         <Row icon={<UserRound className="h-4 w-4" />} label="Nome" value={profile.name} />
         <Row icon={<Mail className="h-4 w-4" />} label="E-mail" value={profile.email} />
         <Row
@@ -125,7 +120,7 @@ function ProfilePage() {
       {isAdmin && (
         <Link
           to="/admin"
-          className="glass flex items-center gap-3 rounded-[1.5rem] p-4 transition-colors hover:bg-accent/40"
+          className="liquid-glass flex items-center gap-3 rounded-[1.5rem] p-4 transition-colors hover:bg-accent/40"
         >
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie">
             <ShieldCheck className="h-5 w-5" />

@@ -136,7 +136,6 @@ export function RobotProvider({
     setSessionSignals((prev) => {
       const next = mergeSignals(prev, found);
       if (next.length === prev.length && next[0]?.key === prev[0]?.key) return prev;
-      // Limit to 20 and reset cycle
       const limited = next.slice(0, 20);
       saveHistory(userId, sessionStart, limited);
       return limited;
@@ -213,11 +212,15 @@ export function RobotProvider({
       } catch {
         /* ignore */
       }
+      if (!next) {
+        // Reactivating: force a fresh fetch so the table starts receiving again
+        void queryClient.invalidateQueries({ queryKey: liveTableQuery.queryKey });
+      }
       toast.success(next ? "API da mesa pausada" : "API da mesa reativada");
       logAdminAction(next ? "Pausou a API" : "Reativou a API");
       return next;
     });
-  }, [isAdmin]);
+  }, [isAdmin, queryClient]);
 
   const tableError = live.isError;
   const feed = live.data?.feed ?? null;

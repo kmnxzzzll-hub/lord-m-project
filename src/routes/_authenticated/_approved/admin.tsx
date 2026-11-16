@@ -93,6 +93,13 @@ function AdminPage() {
   const pending = profiles.filter((p) => p.status === "pending");
   const others = profiles.filter((p) => p.status !== "pending");
 
+  const tabs = [
+    ["pending", "Pendentes"],
+    ["users", "Usuários"],
+    ["robot", "Robô"],
+    ["account", "Senha"],
+  ] as const;
+
   return (
     <div className="mx-auto space-y-3 pt-2 sm:space-y-4 lg:max-w-3xl">
       <header className="flex items-center gap-3">
@@ -106,7 +113,7 @@ function AdminPage() {
       </header>
 
       <div className="liquid-glass grid grid-cols-4 gap-1 rounded-2xl p-1">
-        {(["pending", "Pendentes"], ["users", "Usuários"], ["robot", "Robô"], ["account", "Senha"] as const).map(([k, label]) => (
+        {tabs.map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)} className="relative rounded-xl px-1 py-2 text-xs font-semibold sm:py-2.5 sm:text-sm">
             {tab === k && <motion.span layoutId="admin-tab" className="absolute inset-0 rounded-xl bg-secondary ring-1 ring-border" />}
             <span className={cn("relative block truncate", tab === k ? "text-foreground" : "text-muted-foreground")}>{label}</span>

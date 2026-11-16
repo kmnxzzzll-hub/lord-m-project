@@ -51,31 +51,6 @@ export function Cube3D({ size = 96, className }: { size?: number; className?: st
       className={cn("relative flex flex-col items-center", className)}
       style={{ height: box + 16 }}
     >
-      {/* Pulsating glow ring */}
-      <motion.div
-        className="absolute rounded-full border-2 border-success/40"
-        style={{
-          width: box * 0.92,
-          height: box * 0.92,
-          top: 4,
-          filter: "blur(1px)",
-        }}
-        animate={{
-          scale: [1, 1.08, 1],
-          opacity: [0.5, 0.9, 0.5],
-          borderColor: ["rgba(34,197,94,0.3)", "rgba(34,197,94,0.7)", "rgba(34,197,94,0.3)"],
-        }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      {/* Light scan line */}
-      <motion.div
-        className="pointer-events-none absolute left-1/2 top-0 z-10 h-full w-1 -translate-x-1/2 rounded-full bg-gradient-to-b from-transparent via-success/60 to-transparent"
-        style={{ width: 2 }}
-        animate={{ opacity: [0.3, 0.8, 0.3], scaleY: [0.6, 1, 0.6] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-      />
-
       <motion.div
         className="relative flex items-center justify-center"
         style={{ width: box, height: box }}

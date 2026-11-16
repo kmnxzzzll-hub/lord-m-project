@@ -10,8 +10,8 @@ function DieStandIn({ size }: { size: number }) {
     <motion.div
       className="grid grid-cols-3 grid-rows-3 place-items-center rounded-[22%] bg-background p-[16%] shadow-lg ring-1 ring-foreground/15"
       style={{ width: size, height: size }}
-      animate={{ rotate: [0, 8, -8, 0] }}
-      transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+      animate={{ rotate: [0, 12, -12, 0] }}
+      transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
     >
       {Array.from({ length: 9 }, (_, i) => (
         <span
@@ -49,22 +49,52 @@ export function Cube3D({ size = 96, className }: { size?: number; className?: st
   return (
     <div
       className={cn("relative flex flex-col items-center", className)}
-      style={{ height: box + 8 }}
+      style={{ height: box + 16 }}
     >
+      {/* Pulsating glow ring */}
+      <motion.div
+        className="absolute rounded-full border-2 border-success/40"
+        style={{
+          width: box * 0.92,
+          height: box * 0.92,
+          top: 4,
+          filter: "blur(1px)",
+        }}
+        animate={{
+          scale: [1, 1.08, 1],
+          opacity: [0.5, 0.9, 0.5],
+          borderColor: ["rgba(34,197,94,0.3)", "rgba(34,197,94,0.7)", "rgba(34,197,94,0.3)"],
+        }}
+        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* Light scan line */}
+      <motion.div
+        className="pointer-events-none absolute left-1/2 top-0 z-10 h-full w-1 -translate-x-1/2 rounded-full bg-gradient-to-b from-transparent via-success/60 to-transparent"
+        style={{ width: 2 }}
+        animate={{ opacity: [0.3, 0.8, 0.3], scaleY: [0.6, 1, 0.6] }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+      />
+
       <motion.div
         className="relative flex items-center justify-center"
         style={{ width: box, height: box }}
-        animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+        animate={{
+          y: [0, -10, 0],
+          rotate: [0, 6, -6, 0],
+        }}
+        transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
       >
         <div ref={mountRef} className="absolute inset-0" />
         {!ready && <DieStandIn size={Math.round(size * 0.78)} />}
       </motion.div>
+
+      {/* Shadow */}
       <motion.span
-        className="absolute bottom-2 h-3 rounded-[50%] bg-foreground/10 blur-md"
-        style={{ width: size * 0.85 }}
-        animate={{ scaleX: [1, 0.82, 1], opacity: [0.9, 0.55, 0.9] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-1 h-3 rounded-[50%] bg-foreground/15 blur-md"
+        style={{ width: size * 0.9 }}
+        animate={{ scaleX: [1, 0.75, 1], opacity: [0.85, 0.45, 0.85] }}
+        transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
       />
     </div>
   );

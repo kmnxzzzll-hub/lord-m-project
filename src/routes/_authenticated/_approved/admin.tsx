@@ -245,6 +245,21 @@ function RobotControls() {
     setMaintenance(settings.maintenance);
   }, [settings]);
 
+  // Local-only demo notices. This does not use the live table or the real signal engine.
+  const [demoMode, setDemoMode] = useState(false);
+
+  useEffect(() => {
+    if (!demoMode) return;
+    const sendDemoNotice = () => {
+      toast.info("DEMONSTRAÇÃO — notificação de teste", {
+        description: "Evento fictício. Não representa resultado real nem indicação de aposta.",
+      });
+    };
+    sendDemoNotice();
+    const timer = window.setInterval(sendDemoNotice, 30_000);
+    return () => window.clearInterval(timer);
+  }, [demoMode]);
+
   const save = useMutation({
     mutationFn: async (patch: { maintenance: boolean }) => {
       const now = new Date().toISOString();
@@ -287,6 +302,19 @@ function RobotControls() {
           </p>
         </div>
         <Switch checked={robot.apiPaused} onCheckedChange={() => robot.toggleApiPause()} />
+      </div>
+
+      <div className="liquid-glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary"><Radio className="h-5 w-5" /></div>
+        <div className="flex-1">
+          <p className="font-semibold">Modo demonstração</p>
+          <p className="text-xs text-muted-foreground">
+            {demoMode
+              ? "Ativo neste painel: notificações fictícias a cada 30 segundos."
+              : "Testa notificações sem consultar a mesa ou alterar os sinais reais."}
+          </p>
+        </div>
+        <Switch checked={demoMode} onCheckedChange={setDemoMode} />
       </div>
 
       <FeedStatus />

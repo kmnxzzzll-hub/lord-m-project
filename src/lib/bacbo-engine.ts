@@ -1,6 +1,8 @@
 /**
  * Bac Bo pattern engine — expanded classic strategy set.
  * Only entry + 1 gale. No G2.
+ * Every candidate pattern is checked against the table odds and its own recent record here
+ * (see `analyze`), so the robot holds back on weak, conflicting or cold readings.
  */
 
 export type Outcome = "P" | "B" | "T";
@@ -273,9 +275,8 @@ export function analyze(history: Round[], minConfidence: number): Analysis {
     const own = scored.filter((x) => x.m.side === side).sort((a, b) => b.estimate - a.estimate);
     if (!own.length) return null;
     const best = own[0]!;
-    const tilt = (best.m.confidence - 60) / 1000;
-    const bonus = Math.min(0.045, (own.length - 1) * 0.015);
-    return { ...best, score: best.estimate + tilt + bonus, agree: own.slice(1).map((x) => x.m.pattern) };
+    const bonus = Math.min(0.03, (own.length - 1) * 0.01);
+    return { ...best, score: best.estimate + bonus, agree: own.slice(1).map((x) => x.m.pattern) };
   };
   const p = sideScore("player");
   const b = sideScore("banker");

@@ -28,6 +28,7 @@ import { scoreSignals } from "@/lib/scoreboard";
 interface RobotState extends RobotView {
   running: boolean;
   maintenance: boolean;
+  apiPaused: boolean;
   isAdmin: boolean;
   rounds: LiveRound[];
   clockOffset: number;
@@ -36,12 +37,25 @@ interface RobotState extends RobotView {
   sessionSignals: SessionSignal[];
   toggling: boolean;
   toggle: () => void;
+  toggleApiPause: () => void;
   pausedUntil: number | null;
 }
 
 const RobotCtx = createContext<RobotState | null>(null);
 const NO_ROUNDS: LiveRound[] = [];
 const PAUSE_MS = 5 * 60 * 1000;
+const API_PAUSE_KEY = "bacbo:api-paused";
+const ADMIN_LOG_KEY = "bacbo:admin-log";
+
+function logAdminAction(action: string) {
+  try {
+    const prev = JSON.parse(localStorage.getItem(ADMIN_LOG_KEY) || "[]") as string[];
+    const entry = `${new Date().toLocaleString("pt-BR")} — ${action}`;
+    localStorage.setItem(ADMIN_LOG_KEY, JSON.stringify([entry, ...prev].slice(0, 30)));
+  } catch {
+    /* ignore */
+  }
+}
 
 export function RobotProvider({
   userId,
@@ -58,12 +72,20 @@ export function RobotProvider({
   const { data: settings } = useQuery(settingsQuery);
   const running = !!settings?.running && !!settings.started_at;
   const maintenance = settings?.maintenance ?? false;
-  const active = running && !maintenance;
+
+  const [apiPaused, setApiPaused] = useState(() => {
+    try {
+      return localStorage.getItem(API_PAUSE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
 
   const [pausedUntil, setPausedUntil] = useState<number | null>(null);
   const isPaused = pausedUntil !== null && Date.now() < pausedUntil;
 
-  // Only poll live table when the robot is actually running
+  const active = running && !maintenance && !apiPaused;
+
   const live = useQuery({
     ...liveTableQuery,
     refetchInterval: active && !isPaused ? 2_000 : false,
@@ -108,16 +130,18 @@ export function RobotProvider({
   }, [view.wakeAt, clockOffset]);
 
   useEffect(() => {
-    if (!cfg) return;
+    if (!cfg || maintenance || apiPaused) return;
     const found = signalsBetween(cfg, rounds, Math.max(sessionStart, cfg.startedAt), now);
     if (!found.length) return;
     setSessionSignals((prev) => {
       const next = mergeSignals(prev, found);
       if (next.length === prev.length && next[0]?.key === prev[0]?.key) return prev;
-      saveHistory(userId, sessionStart, next);
-      return next;
+      // Limit to 20 and reset cycle
+      const limited = next.slice(0, 20);
+      saveHistory(userId, sessionStart, limited);
+      return limited;
     });
-  }, [cfg, rounds, now, sessionStart, userId]);
+  }, [cfg, rounds, now, sessionStart, userId, maintenance, apiPaused]);
 
   // Auto-pause after 3 consecutive losses
   useEffect(() => {
@@ -127,7 +151,6 @@ export function RobotProvider({
     if (last3.length === 3 && last3.every((r) => !r.green)) {
       const until = Date.now() + PAUSE_MS;
       setPausedUntil(until);
-      // Force robot off in settings so admin cannot re-enable immediately
       void supabase
         .from("robot_settings")
         .update({
@@ -137,6 +160,7 @@ export function RobotProvider({
         })
         .eq("id", 1);
       toast.error("MESA MANIPULANDO, SAI NÃO FIQUE TEIMOSO. Robô pausado 5 minutos.");
+      logAdminAction("Auto-pausa após 3 reds");
     }
   }, [sessionSignals, rounds, active, isPaused]);
 
@@ -162,7 +186,9 @@ export function RobotProvider({
     onSuccess: (data: RobotSettings) => {
       queryClient.setQueryData(settingsQuery.queryKey, data);
       if (data.running) void queryClient.invalidateQueries({ queryKey: liveTableQuery.queryKey });
-      toast.success(data.running ? "Robô ligado para todos os usuários" : "Robô desligado");
+      const msg = data.running ? "Robô ligado para todos os usuários" : "Robô pausado 🛑";
+      toast.success(msg);
+      logAdminAction(data.running ? "Ligou o robô" : "Pausou o robô");
     },
     onError: (e) => {
       if (e instanceof Error && e.message === "paused") {
@@ -178,6 +204,21 @@ export function RobotProvider({
     mutation.mutate(!running);
   }, [isAdmin, mutation, running, isPaused]);
 
+  const toggleApiPause = useCallback(() => {
+    if (!isAdmin) return;
+    setApiPaused((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(API_PAUSE_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      toast.success(next ? "API da mesa pausada" : "API da mesa reativada");
+      logAdminAction(next ? "Pausou a API" : "Reativou a API");
+      return next;
+    });
+  }, [isAdmin]);
+
   const tableError = live.isError;
   const feed = live.data?.feed ?? null;
 
@@ -189,6 +230,7 @@ export function RobotProvider({
       wakeAt: view.wakeAt - clockOffset,
       running: running && !isPaused,
       maintenance,
+      apiPaused,
       isAdmin,
       rounds,
       clockOffset,
@@ -197,6 +239,7 @@ export function RobotProvider({
       sessionSignals,
       toggling: mutation.isPending,
       toggle,
+      toggleApiPause,
       pausedUntil,
     }),
     [
@@ -205,6 +248,7 @@ export function RobotProvider({
       running,
       isPaused,
       maintenance,
+      apiPaused,
       isAdmin,
       rounds,
       feed,
@@ -212,6 +256,7 @@ export function RobotProvider({
       sessionSignals,
       mutation.isPending,
       toggle,
+      toggleApiPause,
       pausedUntil,
     ],
   );

@@ -7,7 +7,7 @@ import { LiquidBoard } from "@/components/bacbo/LiquidBoard";
 import { Cube3D } from "@/components/bacbo/Cube3D";
 import { LiveTableCard } from "@/components/bacbo/LiveTable";
 import { SignalOrb } from "@/components/bacbo/SignalOrb";
-import { Scoreboard } from "@/components/bacbo/Scoreboard";
+import { Scoreboard, ResultBanner } from "@/components/bacbo/Scoreboard";
 import { distribution } from "@/lib/bacbo-engine";
 import { useRobot } from "@/lib/robot-context";
 import { MIN_HISTORY } from "@/lib/robot-schedule";
@@ -50,6 +50,7 @@ function RobotsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8 lg:gap-y-5 lg:space-y-0">
+      <ResultBanner />
       <div className="space-y-4 sm:space-y-5">
         <header className="pt-1 sm:pt-2">
           <Logo />
@@ -200,10 +201,10 @@ function Analyzing() {
       : reason === "result" && signal
         ? `Apostas fechadas. Aguardando o resultado da entrada no ${sideName(signal.side)}.`
         : reason === "no_pattern"
-          ? "Lendo a mesa. A entrada sai na próxima rodada."
+          ? "Analisando padrões em formação. Aguardando confirmação segura (paciência ativa)."
           : reason === "next_round"
-            ? "Aguardando a próxima rodada da mesa."
-            : "Calculando a entrada para a próxima rodada.";
+            ? "Aguardando a próxima rodada da mesa para nova leitura."
+            : "Lendo a mesa e identificando padrões claros para entrada segura.";
 
   return (
     <Panel>
@@ -216,7 +217,7 @@ function Analyzing() {
       </h2>
       <p className="mt-1.5 text-xs text-muted-foreground">{text}</p>
       <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">
-        Surf · Xadrez · Parzinho · 3-1-3 · Rampa · Tendência
+        Surf · Xadrez · Parzinho · 3-1-3 · Rampa
       </p>
       <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted sm:mt-6">
         {waiting ? (

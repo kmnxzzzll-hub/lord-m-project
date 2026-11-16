@@ -50,14 +50,7 @@ export const Route = createFileRoute("/_authenticated/_approved/admin")({
   head: () => ({
     meta: [
       { title: "Painel Admin — Bac Bo Live" },
-      {
-        name: "description",
-        content: "Gerencie cadastros, acessos e calibragem do robô Bac Bo Live.",
-      },
-      { property: "og:title", content: "Painel Admin — Bac Bo Live" },
-      { property: "og:description", content: "Área administrativa do robô Bac Bo Live." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "description", content: "Gerencie cadastros, acessos e calibragem do robô Bac Bo Live." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -77,18 +70,6 @@ function AdminPage() {
       const { error } = await supabase.from("profiles").update({ status }).eq("id", id);
       if (error) throw error;
     },
-    onMutate: async ({ id, status }) => {
-      await queryClient.cancelQueries({ queryKey: allProfilesQuery.queryKey });
-      const prev = queryClient.getQueryData(allProfilesQuery.queryKey);
-      queryClient.setQueryData(allProfilesQuery.queryKey, (old: Profile[] = []) =>
-        old.map((p) => (p.id === id ? { ...p, status } : p)),
-      );
-      return { prev };
-    },
-    onError: (_e, _v, ctx) => {
-      if (ctx?.prev) queryClient.setQueryData(allProfilesQuery.queryKey, ctx.prev);
-      toast.error("Não foi possível atualizar o acesso.");
-    },
     onSuccess: (_d, { status }) => {
       const msg: Record<Status, string> = {
         approved: "Acesso liberado",
@@ -105,18 +86,6 @@ function AdminPage() {
   const [toDelete, setToDelete] = useState<Profile | null>(null);
   const remove = useMutation({
     mutationFn: (id: string) => deleteFn({ data: { userId: id } }),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: allProfilesQuery.queryKey });
-      const prev = queryClient.getQueryData(allProfilesQuery.queryKey);
-      queryClient.setQueryData(allProfilesQuery.queryKey, (old: Profile[] = []) =>
-        old.filter((p) => p.id !== id),
-      );
-      return { prev };
-    },
-    onError: (e, _v, ctx) => {
-      if (ctx?.prev) queryClient.setQueryData(allProfilesQuery.queryKey, ctx.prev);
-      toast.error(e instanceof Error ? e.message : "Não foi possível excluir o cadastro.");
-    },
     onSuccess: () => toast.success("Cadastro excluído"),
     onSettled: () => queryClient.invalidateQueries({ queryKey: allProfilesQuery.queryKey }),
   });
@@ -127,49 +96,20 @@ function AdminPage() {
   return (
     <div className="mx-auto space-y-3 pt-2 sm:space-y-4 lg:max-w-3xl">
       <header className="flex items-center gap-3">
-        <Link
-          to="/perfil"
-          aria-label="Voltar"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card"
-        >
+        <Link to="/perfil" aria-label="Voltar" className="liquid-glass flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="min-w-0">
-          <h1 className="truncate font-display text-lg font-bold tracking-tight sm:text-xl">
-            Painel do Administrador
-          </h1>
+          <h1 className="truncate font-display text-lg font-bold tracking-tight sm:text-xl">Painel do Administrador</h1>
           <p className="text-xs text-muted-foreground">Acessos, robô e senha</p>
         </div>
       </header>
 
-      <div className="glass grid grid-cols-4 gap-1 rounded-2xl p-1">
-        {(
-          [
-            ["pending", "Pendentes"],
-            ["users", "Usuários"],
-            ["robot", "Robô"],
-            ["account", "Senha"],
-          ] as const
-        ).map(([k, label]) => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            className="relative rounded-xl px-1 py-2 text-xs font-semibold sm:py-2.5 sm:text-sm"
-          >
-            {tab === k && (
-              <motion.span
-                layoutId="admin-tab"
-                className="absolute inset-0 rounded-xl bg-secondary ring-1 ring-border"
-              />
-            )}
-            <span
-              className={cn(
-                "relative block truncate",
-                tab === k ? "text-foreground" : "text-muted-foreground",
-              )}
-            >
-              {label}
-            </span>
+      <div className="liquid-glass grid grid-cols-4 gap-1 rounded-2xl p-1">
+        {(["pending", "Pendentes"], ["users", "Usuários"], ["robot", "Robô"], ["account", "Senha"] as const).map(([k, label]) => (
+          <button key={k} onClick={() => setTab(k)} className="relative rounded-xl px-1 py-2 text-xs font-semibold sm:py-2.5 sm:text-sm">
+            {tab === k && <motion.span layoutId="admin-tab" className="absolute inset-0 rounded-xl bg-secondary ring-1 ring-border" />}
+            <span className={cn("relative block truncate", tab === k ? "text-foreground" : "text-muted-foreground")}>{label}</span>
             {k === "pending" && pending.length > 0 && (
               <span className="absolute -right-0.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-tie px-1 text-[10px] font-bold text-background">
                 {pending.length}
@@ -180,34 +120,14 @@ function AdminPage() {
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div
-          key={tab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
-        >
+        <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
           {tab === "pending" && (
             <List loading={isLoading} empty="Nenhum cadastro aguardando aprovação.">
               {pending.map((p) => (
                 <UserRow key={p.id} p={p}>
-                  <IconBtn
-                    tone="success"
-                    label="Aprovar"
-                    onClick={() => setStatus.mutate({ id: p.id, status: "approved" })}
-                  >
-                    <Check className="h-4 w-4" />
-                  </IconBtn>
-                  <IconBtn
-                    tone="danger"
-                    label="Recusar"
-                    onClick={() => setStatus.mutate({ id: p.id, status: "rejected" })}
-                  >
-                    <X className="h-4 w-4" />
-                  </IconBtn>
-                  <IconBtn tone="muted" label="Excluir" onClick={() => setToDelete(p)}>
-                    <Trash2 className="h-4 w-4" />
-                  </IconBtn>
+                  <IconBtn tone="success" label="Aprovar" onClick={() => setStatus.mutate({ id: p.id, status: "approved" })}><Check className="h-4 w-4" /></IconBtn>
+                  <IconBtn tone="danger" label="Recusar" onClick={() => setStatus.mutate({ id: p.id, status: "rejected" })}><X className="h-4 w-4" /></IconBtn>
+                  <IconBtn tone="muted" label="Excluir" onClick={() => setToDelete(p)}><Trash2 className="h-4 w-4" /></IconBtn>
                 </UserRow>
               ))}
             </List>
@@ -221,25 +141,11 @@ function AdminPage() {
                   ) : (
                     <>
                       {p.status === "approved" ? (
-                        <IconBtn
-                          tone="danger"
-                          label="Bloquear"
-                          onClick={() => setStatus.mutate({ id: p.id, status: "blocked" })}
-                        >
-                          <Ban className="h-4 w-4" />
-                        </IconBtn>
+                        <IconBtn tone="danger" label="Bloquear" onClick={() => setStatus.mutate({ id: p.id, status: "blocked" })}><Ban className="h-4 w-4" /></IconBtn>
                       ) : (
-                        <IconBtn
-                          tone="success"
-                          label="Reativar"
-                          onClick={() => setStatus.mutate({ id: p.id, status: "approved" })}
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                        </IconBtn>
+                        <IconBtn tone="success" label="Reativar" onClick={() => setStatus.mutate({ id: p.id, status: "approved" })}><RotateCcw className="h-4 w-4" /></IconBtn>
                       )}
-                      <IconBtn tone="muted" label="Excluir" onClick={() => setToDelete(p)}>
-                        <Trash2 className="h-4 w-4" />
-                      </IconBtn>
+                      <IconBtn tone="muted" label="Excluir" onClick={() => setToDelete(p)}><Trash2 className="h-4 w-4" /></IconBtn>
                     </>
                   )}
                 </UserRow>
@@ -256,19 +162,12 @@ function AdminPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir cadastro?</AlertDialogTitle>
             <AlertDialogDescription>
-              A conta de {toDelete?.name || toDelete?.email} será apagada de vez. A pessoa precisará
-              se cadastrar de novo para pedir acesso.
+              A conta de {toDelete?.name || toDelete?.email} será apagada de vez.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (toDelete) remove.mutate(toDelete.id);
-                setToDelete(null);
-              }}
-            >
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (toDelete) remove.mutate(toDelete.id); setToDelete(null); }}>
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -278,19 +177,11 @@ function AdminPage() {
   );
 }
 
-function List({
-  loading,
-  empty,
-  children,
-}: {
-  loading: boolean;
-  empty: string;
-  children: ReactNode[];
-}) {
-  if (loading) return <div className="glass h-24 animate-pulse rounded-2xl" />;
+function List({ loading, empty, children }: { loading: boolean; empty: string; children: ReactNode[] }) {
+  if (loading) return <div className="liquid-glass h-24 animate-pulse rounded-2xl" />;
   if (children.length === 0)
     return (
-      <div className="glass rounded-2xl p-8 text-center">
+      <div className="liquid-glass rounded-2xl p-8 text-center">
         <Users className="mx-auto h-6 w-6 text-muted-foreground" />
         <p className="mt-2 text-sm text-muted-foreground">{empty}</p>
       </div>
@@ -313,26 +204,12 @@ const BADGE_LABEL: Record<Status, string> = {
 
 function UserRow({ p, badge, children }: { p: Profile; badge?: Status; children: ReactNode }) {
   return (
-    <motion.li layout className="glass flex items-center gap-2.5 rounded-2xl p-2.5 sm:gap-3 sm:p-3">
-      <Avatar
-        value={p.avatar_url}
-        name={p.name}
-        className="h-9 w-9 shrink-0 sm:h-10 sm:w-10"
-        textClass="text-sm"
-      />
+    <motion.li layout className="liquid-glass flex items-center gap-2.5 rounded-2xl p-2.5 sm:gap-3 sm:p-3">
+      <Avatar value={p.avatar_url} name={p.name} className="h-9 w-9 shrink-0 sm:h-10 sm:w-10" textClass="text-sm" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-semibold sm:text-base">{p.name || "Sem nome"}</p>
-          {badge && (
-            <span
-              className={cn(
-                "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase",
-                BADGE[badge],
-              )}
-            >
-              {BADGE_LABEL[badge]}
-            </span>
-          )}
+          {badge && <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase", BADGE[badge])}>{BADGE_LABEL[badge]}</span>}
         </div>
         <p className="truncate text-xs text-muted-foreground">{p.email}</p>
       </div>
@@ -341,31 +218,9 @@ function UserRow({ p, badge, children }: { p: Profile; badge?: Status; children:
   );
 }
 
-function IconBtn({
-  tone,
-  label,
-  onClick,
-  children,
-}: {
-  tone: "success" | "danger" | "muted";
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-}) {
+function IconBtn({ tone, label, onClick, children }: { tone: "success" | "danger" | "muted"; label: string; onClick: () => void; children: ReactNode }) {
   return (
-    <motion.button
-      whileTap={{ scale: 0.9 }}
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "flex h-9 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-semibold sm:h-10 sm:px-3",
-        tone === "success" && "border-success/30 bg-success/10 text-success",
-        tone === "danger" && "border-destructive/30 bg-destructive/10 text-destructive",
-        tone === "muted" &&
-          "border-border bg-secondary text-muted-foreground hover:text-destructive",
-      )}
-    >
+    <motion.button whileTap={{ scale: 0.9 }} onClick={onClick} aria-label={label} title={label} className={cn("flex h-9 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-semibold sm:h-10 sm:px-3", tone === "success" && "border-success/30 bg-success/10 text-success", tone === "danger" && "border-destructive/30 bg-destructive/10 text-destructive", tone === "muted" && "border-border bg-secondary text-muted-foreground hover:text-destructive")}>
       {children}
       <span className="hidden sm:inline">{label}</span>
     </motion.button>
@@ -386,10 +241,7 @@ function RobotControls() {
   const save = useMutation({
     mutationFn: async (patch: { maintenance: boolean }) => {
       const now = new Date().toISOString();
-      const { error } = await supabase
-        .from("robot_settings")
-        .update({ ...patch, updated_at: now })
-        .eq("id", 1);
+      const { error } = await supabase.from("robot_settings").update({ ...patch, updated_at: now }).eq("id", 1);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -401,53 +253,31 @@ function RobotControls() {
 
   return (
     <div className="space-y-3">
-      <div className="glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-success/30 bg-success/10 text-success">
-          <Power className="h-5 w-5" />
-        </div>
+      <div className="liquid-glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-success/30 bg-success/10 text-success"><Power className="h-5 w-5" /></div>
         <div className="flex-1">
           <p className="font-semibold">Robô ligado</p>
-          <p className="text-xs text-muted-foreground">
-            Só você liga o robô. Desligado, ninguém recebe sinais.
-          </p>
+          <p className="text-xs text-muted-foreground">Pausar o robô para os sinais e o histórico.</p>
         </div>
-        <Switch
-          checked={robot.running}
-          disabled={robot.toggling}
-          onCheckedChange={() => robot.toggle()}
-        />
+        <Switch checked={robot.running} disabled={robot.toggling} onCheckedChange={() => robot.toggle()} />
       </div>
 
-      <FeedStatus />
-
-      <div className="glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-success/30 bg-success/10 text-success">
-          <ShieldCheck className="h-5 w-5" />
-        </div>
+      <div className="liquid-glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-destructive/30 bg-destructive/10 text-destructive"><Radio className="h-5 w-5" /></div>
         <div className="flex-1">
-          <p className="font-semibold">Análise automática</p>
-          <p className="text-xs text-muted-foreground">
-            O sinal sai assim que a rodada chega da mesa, com tempo para apostar. Rodadas que
-            chegam atrasadas são puladas.
-          </p>
+          <p className="font-semibold">Pausar API da mesa</p>
+          <p className="text-xs text-muted-foreground">Para de receber resultados da LynxMetrics.</p>
         </div>
+        <Switch checked={robot.apiPaused} onCheckedChange={() => robot.toggleApiPause()} />
       </div>
 
-      <div className="glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie">
-          <Wrench className="h-5 w-5" />
-        </div>
+      <div className="liquid-glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie"><Wrench className="h-5 w-5" /></div>
         <div className="flex-1">
           <p className="font-semibold">Modo manutenção</p>
-          <p className="text-xs text-muted-foreground">Pausa o robô para todos os usuários</p>
+          <p className="text-xs text-muted-foreground">Para tudo (robô, histórico e sinais) para todos.</p>
         </div>
-        <Switch
-          checked={maintenance}
-          onCheckedChange={(v) => {
-            setMaintenance(v);
-            save.mutate({ maintenance: v });
-          }}
-        />
+        <Switch checked={maintenance} onCheckedChange={(v) => { setMaintenance(v); save.mutate({ maintenance: v }); }} />
       </div>
     </div>
   );
@@ -462,26 +292,11 @@ function PasswordForm() {
     e.preventDefault();
     setError(null);
     if (form.next.length < 6) return setError("A nova senha precisa de pelo menos 6 caracteres.");
-    if (form.next.length > 72) return setError("A nova senha é muito longa.");
     if (form.next !== form.confirm) return setError("As senhas novas não são iguais.");
-    if (form.next === form.current) return setError("A nova senha precisa ser diferente da atual.");
     setSaving(true);
     try {
-      // The backend requires and checks the current password, so a wrong one is rejected.
-      const { error } = await supabase.auth.updateUser({
-        password: form.next,
-        current_password: form.current,
-      });
-      if (error) {
-        const m = error.message.toLowerCase();
-        return setError(
-          m.includes("current") || m.includes("reauth") || m.includes("invalid")
-            ? "Senha atual incorreta."
-            : m.includes("weak") || m.includes("pwned") || m.includes("leak")
-              ? "Essa senha é fraca ou já apareceu em vazamentos. Escolha outra."
-              : "Não foi possível alterar a senha. Tente outra.",
-        );
-      }
+      const { error } = await supabase.auth.updateUser({ password: form.next, current_password: form.current });
+      if (error) return setError("Não foi possível alterar a senha.");
       setForm({ current: "", next: "", confirm: "" });
       toast.success("Senha alterada");
     } finally {
@@ -490,120 +305,24 @@ function PasswordForm() {
   }
 
   const field = (key: keyof typeof form, placeholder: string, autoComplete: string) => (
-    <input
-      type="password"
-      placeholder={placeholder}
-      autoComplete={autoComplete}
-      value={form[key]}
-      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-      className="h-12 w-full rounded-xl border border-border bg-card/70 px-4 text-[15px] outline-none placeholder:text-muted-foreground focus:border-foreground/25"
-    />
+    <input type="password" placeholder={placeholder} autoComplete={autoComplete} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="liquid-glass h-12 w-full rounded-xl px-4 text-[15px] outline-none placeholder:text-muted-foreground" />
   );
 
   return (
-    <form onSubmit={onSubmit} className="glass space-y-3 rounded-2xl p-4 sm:p-5">
+    <form onSubmit={onSubmit} className="liquid-glass space-y-3 rounded-2xl p-4 sm:p-5">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie">
-          <KeyRound className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie"><KeyRound className="h-5 w-5" /></div>
+        <div>
           <p className="font-semibold">Alterar minha senha</p>
-          <p className="text-xs text-muted-foreground">Informe a senha atual e escolha a nova</p>
         </div>
       </div>
       {field("current", "Senha atual", "current-password")}
       {field("next", "Nova senha", "new-password")}
-      {field("confirm", "Repita a nova senha", "new-password")}
-      {error && <p className="text-center text-sm text-destructive">{error}</p>}
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        disabled={saving}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-success/90 to-success font-semibold text-background disabled:opacity-60"
-      >
-        {saving ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <ShieldCheck className="h-4 w-4" />
-        )}{" "}
-        Salvar nova senha
-      </motion.button>
+      {field("confirm", "Confirmar nova senha", "new-password")}
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <button disabled={saving} className="flex h-12 w-full items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold disabled:opacity-60">
+        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar
+      </button>
     </form>
-  );
-}
-
-function FeedStatus() {
-  const queryClient = useQueryClient();
-  const { feed, rounds, tableError } = useRobot();
-  const last = rounds[rounds.length - 1];
-  const problem = feedErrorMessage(feed?.lastError) ?? (tableError ? feedErrorMessage("x") : null);
-  const [key, setKey] = useState("");
-  const connectFn = useServerFn(connectLiveTable);
-  const connect = useMutation({
-    mutationFn: () => connectFn({ data: { key } }),
-    onSuccess: (r) => {
-      if (r.ok) {
-        setKey("");
-        toast.success("Mesa conectada. Recebendo rodadas.");
-        void queryClient.invalidateQueries({ queryKey: liveTableQuery.queryKey });
-      } else {
-        toast.error(feedErrorMessage(r.error) ?? "Não foi possível conectar.");
-      }
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível conectar."),
-  });
-  return (
-    <div className="glass space-y-3 rounded-2xl p-4 sm:p-5">
-      <div className="flex items-center gap-3">
-        <div
-          className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-xl border",
-            problem
-              ? "border-destructive/30 bg-destructive/10 text-destructive"
-              : "border-success/30 bg-success/10 text-success",
-          )}
-        >
-          <Radio className="h-5 w-5" />
-        </div>
-        <div className="flex-1">
-          <p className="font-semibold">Mesa ao vivo (LynxMetrics)</p>
-          <p className="text-xs text-muted-foreground">
-            {problem ??
-              (last
-                ? `Conectada · recebendo rodadas (${rounds.length})`
-                : feed?.lastSuccessAt
-                  ? "Conectada · aguardando a próxima rodada da mesa."
-                  : "Sem conexão com a mesa.")}
-          </p>
-        </div>
-      </div>
-      <form
-        className="flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (key.trim()) connect.mutate();
-        }}
-      >
-        <input
-          type="password"
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-          placeholder="Cole a chave (sk-lynx…)"
-          autoComplete="off"
-          className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-3 text-sm outline-none focus:border-success/60"
-        />
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          disabled={connect.isPending || !key.trim()}
-          className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-success px-4 text-sm font-semibold text-background disabled:opacity-50"
-        >
-          {connect.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-          Ligar conexão
-        </motion.button>
-      </form>
-      <p className="text-[11px] leading-relaxed text-muted-foreground">
-        Use a chave do Bac Bo Live criada no painel da LynxMetrics. Ela é testada antes de ser
-        salva, e a mesa reconecta na hora, já buscando as últimas rodadas.
-      </p>
-    </div>
   );
 }

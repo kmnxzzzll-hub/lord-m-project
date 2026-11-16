@@ -45,7 +45,6 @@ function RobotsPage() {
   const { phase, isAdmin } = robot;
   const on = phase !== "off";
 
-  // Liquid stays at the bottom while off or analyzing; it only rises once a signal is out.
   const dist = phase === "signal" ? distribution(robot.history, robot.signal) : null;
 
   return (
@@ -154,7 +153,6 @@ function RobotsPage() {
               <SignalOrb
                 key={`signal-${robot.key}`}
                 side={robot.signal.side}
-                pattern={robot.signal.pattern}
                 phaseStart={robot.phaseStart}
                 phaseEnd={robot.phaseEnd}
               />
@@ -201,10 +199,10 @@ function Analyzing() {
       : reason === "result" && signal
         ? `Apostas fechadas. Aguardando o resultado da entrada no ${sideName(signal.side)}.`
         : reason === "no_pattern"
-          ? "Analisando padrões em formação. Aguardando confirmação segura (paciência ativa)."
+          ? "Analisando padrões em formação. Aguardando confirmação segura."
           : reason === "next_round"
-            ? "Aguardando a próxima rodada da mesa para nova leitura."
-            : "Lendo a mesa e identificando padrões claros para entrada segura.";
+            ? "Aguardando a próxima rodada da mesa."
+            : "Lendo a mesa e identificando padrões claros.";
 
   return (
     <Panel>
@@ -216,12 +214,8 @@ function Analyzing() {
         </span>
       </h2>
       <p className="mt-1.5 text-xs text-muted-foreground">{text}</p>
-      <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">
-        Surf · Xadrez · Parzinho · 3-1-3 · Rampa
-      </p>
       <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted sm:mt-6">
         {waiting ? (
-          // No countdown while waiting on the table: the next round decides when it moves on.
           <motion.div
             className="h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-success to-transparent"
             animate={{ x: ["-100%", "300%"] }}

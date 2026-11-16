@@ -10,7 +10,6 @@ import {
   Loader2,
   Power,
   RotateCcw,
-  ShieldCheck,
   Trash2,
   Users,
   Wrench,
@@ -39,6 +38,7 @@ import { Avatar } from "@/components/bacbo/Avatar";
 import { allProfilesQuery, settingsQuery, type Profile } from "@/lib/queries";
 import { useRobot } from "@/lib/robot-context";
 import { feedErrorMessage } from "@/lib/live-table";
+import { PROVIDER_LIST, type ProviderId } from "@/lib/providers";
 import { cn } from "@/lib/utils";
 
 type Status = Database["public"]["Enums"]["account_status"];
@@ -103,20 +103,42 @@ function AdminPage() {
   return (
     <div className="mx-auto space-y-3 pt-2 sm:space-y-4 lg:max-w-3xl">
       <header className="flex items-center gap-3">
-        <Link to="/perfil" aria-label="Voltar" className="liquid-glass flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+        <Link
+          to="/perfil"
+          aria-label="Voltar"
+          className="liquid-glass flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="min-w-0">
-          <h1 className="truncate font-display text-lg font-bold tracking-tight sm:text-xl">Painel do Administrador</h1>
+          <h1 className="truncate font-display text-lg font-bold tracking-tight sm:text-xl">
+            Painel do Administrador
+          </h1>
           <p className="text-xs text-muted-foreground">Acessos, robô e senha</p>
         </div>
       </header>
 
       <div className="liquid-glass grid grid-cols-4 gap-1 rounded-2xl p-1">
         {tabs.map(([k, label]) => (
-          <button key={k} onClick={() => setTab(k)} className="relative rounded-xl px-1 py-2 text-xs font-semibold sm:py-2.5 sm:text-sm">
-            {tab === k && <motion.span layoutId="admin-tab" className="absolute inset-0 rounded-xl bg-secondary ring-1 ring-border" />}
-            <span className={cn("relative block truncate", tab === k ? "text-foreground" : "text-muted-foreground")}>{label}</span>
+          <button
+            key={k}
+            onClick={() => setTab(k)}
+            className="relative rounded-xl px-1 py-2 text-xs font-semibold sm:py-2.5 sm:text-sm"
+          >
+            {tab === k && (
+              <motion.span
+                layoutId="admin-tab"
+                className="absolute inset-0 rounded-xl bg-secondary ring-1 ring-border"
+              />
+            )}
+            <span
+              className={cn(
+                "relative block truncate",
+                tab === k ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              {label}
+            </span>
             {k === "pending" && pending.length > 0 && (
               <span className="absolute -right-0.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-tie px-1 text-[10px] font-bold text-background">
                 {pending.length}
@@ -127,14 +149,34 @@ function AdminPage() {
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2 }}
+        >
           {tab === "pending" && (
             <List loading={isLoading} empty="Nenhum cadastro aguardando aprovação.">
               {pending.map((p) => (
                 <UserRow key={p.id} p={p}>
-                  <IconBtn tone="success" label="Aprovar" onClick={() => setStatus.mutate({ id: p.id, status: "approved" })}><Check className="h-4 w-4" /></IconBtn>
-                  <IconBtn tone="danger" label="Recusar" onClick={() => setStatus.mutate({ id: p.id, status: "rejected" })}><X className="h-4 w-4" /></IconBtn>
-                  <IconBtn tone="muted" label="Excluir" onClick={() => setToDelete(p)}><Trash2 className="h-4 w-4" /></IconBtn>
+                  <IconBtn
+                    tone="success"
+                    label="Aprovar"
+                    onClick={() => setStatus.mutate({ id: p.id, status: "approved" })}
+                  >
+                    <Check className="h-4 w-4" />
+                  </IconBtn>
+                  <IconBtn
+                    tone="danger"
+                    label="Recusar"
+                    onClick={() => setStatus.mutate({ id: p.id, status: "rejected" })}
+                  >
+                    <X className="h-4 w-4" />
+                  </IconBtn>
+                  <IconBtn tone="muted" label="Excluir" onClick={() => setToDelete(p)}>
+                    <Trash2 className="h-4 w-4" />
+                  </IconBtn>
                 </UserRow>
               ))}
             </List>
@@ -148,11 +190,25 @@ function AdminPage() {
                   ) : (
                     <>
                       {p.status === "approved" ? (
-                        <IconBtn tone="danger" label="Bloquear" onClick={() => setStatus.mutate({ id: p.id, status: "blocked" })}><Ban className="h-4 w-4" /></IconBtn>
+                        <IconBtn
+                          tone="danger"
+                          label="Bloquear"
+                          onClick={() => setStatus.mutate({ id: p.id, status: "blocked" })}
+                        >
+                          <Ban className="h-4 w-4" />
+                        </IconBtn>
                       ) : (
-                        <IconBtn tone="success" label="Reativar" onClick={() => setStatus.mutate({ id: p.id, status: "approved" })}><RotateCcw className="h-4 w-4" /></IconBtn>
+                        <IconBtn
+                          tone="success"
+                          label="Reativar"
+                          onClick={() => setStatus.mutate({ id: p.id, status: "approved" })}
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </IconBtn>
                       )}
-                      <IconBtn tone="muted" label="Excluir" onClick={() => setToDelete(p)}><Trash2 className="h-4 w-4" /></IconBtn>
+                      <IconBtn tone="muted" label="Excluir" onClick={() => setToDelete(p)}>
+                        <Trash2 className="h-4 w-4" />
+                      </IconBtn>
                     </>
                   )}
                 </UserRow>
@@ -174,7 +230,13 @@ function AdminPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (toDelete) remove.mutate(toDelete.id); setToDelete(null); }}>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (toDelete) remove.mutate(toDelete.id);
+                setToDelete(null);
+              }}
+            >
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -184,7 +246,15 @@ function AdminPage() {
   );
 }
 
-function List({ loading, empty, children }: { loading: boolean; empty: string; children: ReactNode[] }) {
+function List({
+  loading,
+  empty,
+  children,
+}: {
+  loading: boolean;
+  empty: string;
+  children: ReactNode[];
+}) {
   if (loading) return <div className="liquid-glass h-24 animate-pulse rounded-2xl" />;
   if (children.length === 0)
     return (
@@ -212,11 +282,25 @@ const BADGE_LABEL: Record<Status, string> = {
 function UserRow({ p, badge, children }: { p: Profile; badge?: Status; children: ReactNode }) {
   return (
     <motion.li layout className="liquid-glass flex items-center gap-2.5 rounded-2xl p-2.5 sm:gap-3 sm:p-3">
-      <Avatar value={p.avatar_url} name={p.name} className="h-9 w-9 shrink-0 sm:h-10 sm:w-10" textClass="text-sm" />
+      <Avatar
+        value={p.avatar_url}
+        name={p.name}
+        className="h-9 w-9 shrink-0 sm:h-10 sm:w-10"
+        textClass="text-sm"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-semibold sm:text-base">{p.name || "Sem nome"}</p>
-          {badge && <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase", BADGE[badge])}>{BADGE_LABEL[badge]}</span>}
+          {badge && (
+            <span
+              className={cn(
+                "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase",
+                BADGE[badge],
+              )}
+            >
+              {BADGE_LABEL[badge]}
+            </span>
+          )}
         </div>
         <p className="truncate text-xs text-muted-foreground">{p.email}</p>
       </div>
@@ -225,9 +309,31 @@ function UserRow({ p, badge, children }: { p: Profile; badge?: Status; children:
   );
 }
 
-function IconBtn({ tone, label, onClick, children }: { tone: "success" | "danger" | "muted"; label: string; onClick: () => void; children: ReactNode }) {
+function IconBtn({
+  tone,
+  label,
+  onClick,
+  children,
+}: {
+  tone: "success" | "danger" | "muted";
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
   return (
-    <motion.button whileTap={{ scale: 0.9 }} onClick={onClick} aria-label={label} title={label} className={cn("flex h-9 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-semibold sm:h-10 sm:px-3", tone === "success" && "border-success/30 bg-success/10 text-success", tone === "danger" && "border-destructive/30 bg-destructive/10 text-destructive", tone === "muted" && "border-border bg-secondary text-muted-foreground hover:text-destructive")}>
+    <motion.button
+      whileTap={{ scale: 0.9 }}
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={cn(
+        "flex h-9 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-semibold sm:h-10 sm:px-3",
+        tone === "success" && "border-success/30 bg-success/10 text-success",
+        tone === "danger" && "border-destructive/30 bg-destructive/10 text-destructive",
+        tone === "muted" &&
+          "border-border bg-secondary text-muted-foreground hover:text-destructive",
+      )}
+    >
       {children}
       <span className="hidden sm:inline">{label}</span>
     </motion.button>
@@ -248,7 +354,10 @@ function RobotControls() {
   const save = useMutation({
     mutationFn: async (patch: { maintenance: boolean }) => {
       const now = new Date().toISOString();
-      const { error } = await supabase.from("robot_settings").update({ ...patch, updated_at: now }).eq("id", 1);
+      const { error } = await supabase
+        .from("robot_settings")
+        .update({ ...patch, updated_at: now })
+        .eq("id", 1);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -261,7 +370,9 @@ function RobotControls() {
   return (
     <div className="space-y-3">
       <div className="liquid-glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-success/30 bg-success/10 text-success"><Power className="h-5 w-5" /></div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-success/30 bg-success/10 text-success">
+          <Power className="h-5 w-5" />
+        </div>
         <div className="flex-1">
           <p className="font-semibold">Robô ligado</p>
           <p className="text-xs text-muted-foreground">Pausar o robô para os sinais e o histórico.</p>
@@ -270,12 +381,14 @@ function RobotControls() {
       </div>
 
       <div className="liquid-glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
-        <div className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-xl border",
-          robot.apiPaused
-            ? "border-destructive/30 bg-destructive/10 text-destructive"
-            : "border-success/30 bg-success/10 text-success"
-        )}>
+        <div
+          className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-xl border",
+            robot.apiPaused
+              ? "border-destructive/30 bg-destructive/10 text-destructive"
+              : "border-success/30 bg-success/10 text-success",
+          )}
+        >
           <Radio className="h-5 w-5" />
         </div>
         <div className="flex-1">
@@ -292,12 +405,20 @@ function RobotControls() {
       <FeedStatus />
 
       <div className="liquid-glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie"><Wrench className="h-5 w-5" /></div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie">
+          <Wrench className="h-5 w-5" />
+        </div>
         <div className="flex-1">
           <p className="font-semibold">Modo manutenção</p>
           <p className="text-xs text-muted-foreground">Para tudo (robô, histórico e sinais) para todos.</p>
         </div>
-        <Switch checked={maintenance} onCheckedChange={(v) => { setMaintenance(v); save.mutate({ maintenance: v }); }} />
+        <Switch
+          checked={maintenance}
+          onCheckedChange={(v) => {
+            setMaintenance(v);
+            save.mutate({ maintenance: v });
+          }}
+        />
       </div>
     </div>
   );
@@ -309,11 +430,13 @@ function FeedStatus() {
   const feed = data?.feed;
   const errorMsg = feedErrorMessage(feed?.lastError);
   const connected = !!feed?.lastSuccessAt && !feed?.lastError;
+  const [provider, setProvider] = useState<ProviderId>("lynxmetrics");
   const [key, setKey] = useState("");
   const [saving, setSaving] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const connect = useServerFn(connectLiveTable);
+  const selected = PROVIDER_LIST.find((p) => p.id === provider) ?? PROVIDER_LIST[0]!;
 
   async function onConnect(e: FormEvent) {
     e.preventDefault();
@@ -325,7 +448,7 @@ function FeedStatus() {
     }
     setSaving(true);
     try {
-      const res = await connect({ data: { key: trimmed } });
+      const res = await connect({ data: { key: trimmed, provider } });
       if (!res.ok) {
         const msg = feedErrorMessage(res.error) ?? "Não foi possível conectar a chave.";
         setLocalError(msg);
@@ -347,31 +470,55 @@ function FeedStatus() {
   return (
     <div className="liquid-glass space-y-3 rounded-2xl p-4 sm:p-5">
       <div className="flex items-center gap-3">
-        <div className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-xl border",
-          connected
-            ? "border-success/30 bg-success/10 text-success"
-            : "border-destructive/30 bg-destructive/10 text-destructive"
-        )}>
+        <div
+          className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-xl border",
+            connected
+              ? "border-success/30 bg-success/10 text-success"
+              : "border-destructive/30 bg-destructive/10 text-destructive",
+          )}
+        >
           <KeyRound className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="font-semibold">Chave da API (LynxMetrics)</p>
+          <p className="font-semibold">Fonte dos dados da mesa</p>
           <p className="text-xs text-muted-foreground">
             {connected
               ? "Mesa ligada e a receber dados."
-              : errorMsg || (isError ? "Erro ao ler o estado da mesa." : "Cole a chave para ligar a mesa.")}
+              : errorMsg ||
+                (isError ? "Erro ao ler o estado da mesa." : "Escolha o provedor e cole a chave.")}
           </p>
         </div>
       </div>
 
-      <form onSubmit={onConnect} className="space-y-2">
+      <form onSubmit={onConnect} className="space-y-2.5">
+        <div>
+          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Provedor
+          </label>
+          <select
+            value={provider}
+            onChange={(e) => setProvider(e.target.value as ProviderId)}
+            className="liquid-glass h-11 w-full rounded-xl px-3 text-sm outline-none"
+          >
+            {PROVIDER_LIST.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-[11px] text-muted-foreground">{selected.help}</p>
+        </div>
+
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Cole a chave da LynxMetrics aqui"
+            placeholder={selected.keyPlaceholder}
             value={key}
-            onChange={(e) => { setKey(e.target.value); setLocalError(null); }}
+            onChange={(e) => {
+              setKey(e.target.value);
+              setLocalError(null);
+            }}
             className="liquid-glass h-11 flex-1 rounded-xl px-4 text-sm outline-none placeholder:text-muted-foreground"
             autoComplete="off"
             spellCheck={false}
@@ -379,15 +526,13 @@ function FeedStatus() {
           <button
             type="submit"
             disabled={saving || key.trim().length < 8}
-            className="flex h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Ligar mesa
           </button>
         </div>
-        {localError && (
-          <p className="text-xs text-destructive">{localError}</p>
-        )}
+        {localError && <p className="text-xs text-destructive">{localError}</p>}
       </form>
     </div>
   );
@@ -405,7 +550,10 @@ function PasswordForm() {
     if (form.next !== form.confirm) return setError("As senhas novas não são iguais.");
     setSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: form.next, current_password: form.current });
+      const { error } = await supabase.auth.updateUser({
+        password: form.next,
+        current_password: form.current,
+      });
       if (error) return setError("Não foi possível alterar a senha.");
       setForm({ current: "", next: "", confirm: "" });
       toast.success("Senha alterada");
@@ -415,13 +563,22 @@ function PasswordForm() {
   }
 
   const field = (key: keyof typeof form, placeholder: string, autoComplete: string) => (
-    <input type="password" placeholder={placeholder} autoComplete={autoComplete} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="liquid-glass h-12 w-full rounded-xl px-4 text-[15px] outline-none placeholder:text-muted-foreground" />
+    <input
+      type="password"
+      placeholder={placeholder}
+      autoComplete={autoComplete}
+      value={form[key]}
+      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+      className="liquid-glass h-12 w-full rounded-xl px-4 text-[15px] outline-none placeholder:text-muted-foreground"
+    />
   );
 
   return (
     <form onSubmit={onSubmit} className="liquid-glass space-y-3 rounded-2xl p-4 sm:p-5">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie"><KeyRound className="h-5 w-5" /></div>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie">
+          <KeyRound className="h-5 w-5" />
+        </div>
         <div>
           <p className="font-semibold">Alterar minha senha</p>
         </div>
@@ -430,8 +587,12 @@ function PasswordForm() {
       {field("next", "Nova senha", "new-password")}
       {field("confirm", "Confirmar nova senha", "new-password")}
       {error && <p className="text-sm text-destructive">{error}</p>}
-      <button disabled={saving} className="flex h-12 w-full items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold disabled:opacity-60">
-        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar
+      <button
+        disabled={saving}
+        className="flex h-12 w-full items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground disabled:opacity-60"
+      >
+        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        Salvar senha
       </button>
     </form>
   );

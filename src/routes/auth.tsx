@@ -27,10 +27,6 @@ export const Route = createFileRoute("/auth")({
         name: "description",
         content: "Acesse sua conta do robô de sinais Bac Bo Live ou crie um cadastro.",
       },
-      { property: "og:title", content: "Entrar — Bac Bo Live" },
-      { property: "og:description", content: "Acesse o robô de sinais Bac Bo Live." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AuthPage,
@@ -54,7 +50,6 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
 
-  // Arriving with a status notice means the account is not approved: drop the session.
   useEffect(() => {
     if (!search.status) return;
     setNotice(search.status);
@@ -112,7 +107,7 @@ function AuthPage() {
               : m.includes("not allowed") || m.includes("invalid")
                 ? "Use um e-mail válido que possa receber mensagens."
                 : m.includes("password") || m.includes("weak")
-                  ? "Escolha uma senha mais forte (essa é fraca ou já apareceu em vazamentos)."
+                  ? "Escolha uma senha mais forte."
                   : "Não foi possível criar a conta. Tente novamente.",
           );
           return;
@@ -122,7 +117,6 @@ function AuthPage() {
           return;
         }
         setForm({ name: "", email: "", password: "" });
-        // Sign-up confirms instantly: enter right away (approved accounts) or show the waiting notice.
         if (data.session && data.user) {
           await enter(data.user.id, true);
           return;
@@ -148,7 +142,7 @@ function AuthPage() {
       setError("Não foi possível entrar com o Google.");
       return;
     }
-    if (result.redirected) return; // The browser leaves for Google and comes back signed in.
+    if (result.redirected) return;
     const { data } = await supabase.auth.getUser();
     if (data.user) await enter(data.user.id, true);
   }
@@ -199,7 +193,7 @@ function AuthPage() {
                   : "Seu acesso é liberado após aprovação do admin"}
               </p>
 
-              <form onSubmit={onSubmit} className="mt-4 space-y-2.5 sm:mt-7 sm:space-y-3.5">
+              <form onSubmit={onSubmit} className="mt-4 space-y-2 sm:mt-6 sm:space-y-2.5">
                 {mode === "signup" && (
                   <Field icon={<UserRound className="h-[18px] w-[18px]" />}>
                     <input
@@ -248,7 +242,7 @@ function AuthPage() {
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   disabled={loading}
-                  className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-banker to-banker-glow text-[15px] font-semibold text-primary-foreground shadow-[0_18px_40px_-18px_var(--banker)] disabled:opacity-70 sm:mt-2 sm:h-14"
+                  className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-banker to-banker-glow text-[15px] font-semibold text-primary-foreground shadow-[0_18px_40px_-18px_var(--banker)] disabled:opacity-70 sm:h-12"
                 >
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                   {mode === "login" ? "Entrar com E-mail" : "Criar conta"}
@@ -259,36 +253,18 @@ function AuthPage() {
                 whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={onGoogle}
-                className="google-btn mt-3 flex h-12 w-full items-center justify-center gap-[10px] rounded-full px-3 text-sm font-medium shadow-[0_10px_30px_-12px_rgba(0,0,0,0.9)] sm:mt-3.5 sm:h-14"
+                className="google-btn mt-2.5 flex h-11 w-full items-center justify-center gap-[10px] rounded-full px-3 text-sm font-medium shadow-[0_10px_30px_-12px_rgba(0,0,0,0.9)] sm:h-12"
               >
-                <svg
-                  aria-hidden="true"
-                  width="18"
-                  height="18"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="#4285F4"
-                    d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.080.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"
-                  />
+                <svg aria-hidden="true" width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z" />
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.080.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z" />
+                  <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z" />
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z" />
                 </svg>
                 Continuar com o Google
               </motion.button>
 
-              <p className="mt-6 text-center text-sm text-muted-foreground sm:mt-8">
+              <p className="mt-5 text-center text-sm text-muted-foreground sm:mt-6">
                 {mode === "login" ? "Não tem uma conta? " : "Já tem uma conta? "}
                 <button
                   type="button"
@@ -314,7 +290,7 @@ function AuthPage() {
 
 function Field({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <label className="flex h-12 items-center gap-3 rounded-full border border-border bg-card/70 px-4 text-muted-foreground transition-colors focus-within:border-foreground/25 focus-within:bg-card sm:h-14">
+    <label className="liquid-glass flex h-11 items-center gap-3 rounded-full px-4 text-muted-foreground transition-colors focus-within:border-foreground/25 sm:h-12">
       {icon}
       {children}
     </label>
@@ -360,7 +336,7 @@ function NoticeCard({ notice, onBack }: { notice: AccountNotice; onBack: () => v
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ type: "spring", stiffness: 240, damping: 22 }}
-      className="glass mt-3 rounded-[1.5rem] p-5 text-center sm:mt-4 sm:rounded-[1.75rem] sm:p-7"
+      className="liquid-glass mt-3 rounded-[1.5rem] p-5 text-center sm:mt-4 sm:rounded-[1.75rem] sm:p-7"
     >
       <motion.div
         initial={{ scale: 0, rotate: -30 }}

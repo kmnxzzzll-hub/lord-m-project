@@ -14,7 +14,6 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedApprovedRouteRouteImport } from './routes/_authenticated/_approved/route'
 import { Route as AuthenticatedApprovedAdminRouteImport } from './routes/_authenticated/_approved/admin'
-import { Route as AuthenticatedApprovedBancaRouteImport } from './routes/_authenticated/_approved/banca'
 import { Route as AuthenticatedApprovedHistoricoRouteImport } from './routes/_authenticated/_approved/historico'
 import { Route as AuthenticatedApprovedPerfilRouteImport } from './routes/_authenticated/_approved/perfil'
 import { Route as AuthenticatedApprovedRobosRouteImport } from './routes/_authenticated/_approved/robos'
@@ -44,12 +43,6 @@ const AuthenticatedApprovedAdminRoute =
     path: '/admin',
     getParentRoute: () => AuthenticatedApprovedRouteRoute,
   } as any)
-const AuthenticatedApprovedBancaRoute =
-  AuthenticatedApprovedBancaRouteImport.update({
-    id: '/banca',
-    path: '/banca',
-    getParentRoute: () => AuthenticatedApprovedRouteRoute,
-  } as any)
 const AuthenticatedApprovedHistoricoRoute =
   AuthenticatedApprovedHistoricoRouteImport.update({
     id: '/historico',
@@ -73,7 +66,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedApprovedAdminRoute
-  '/banca': typeof AuthenticatedApprovedBancaRoute
   '/historico': typeof AuthenticatedApprovedHistoricoRoute
   '/perfil': typeof AuthenticatedApprovedPerfilRoute
   '/robos': typeof AuthenticatedApprovedRobosRoute
@@ -82,7 +74,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedApprovedAdminRoute
-  '/banca': typeof AuthenticatedApprovedBancaRoute
   '/historico': typeof AuthenticatedApprovedHistoricoRoute
   '/perfil': typeof AuthenticatedApprovedPerfilRoute
   '/robos': typeof AuthenticatedApprovedRobosRoute
@@ -94,17 +85,15 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/_approved': typeof AuthenticatedApprovedRouteRouteWithChildren
   '/_authenticated/_approved/admin': typeof AuthenticatedApprovedAdminRoute
-  '/_authenticated/_approved/banca': typeof AuthenticatedApprovedBancaRoute
   '/_authenticated/_approved/historico': typeof AuthenticatedApprovedHistoricoRoute
   '/_authenticated/_approved/perfil': typeof AuthenticatedApprovedPerfilRoute
   '/_authenticated/_approved/robos': typeof AuthenticatedApprovedRobosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    '/' | '/auth' | '/admin' | '/banca' | '/historico' | '/perfil' | '/robos'
+  fullPaths: '/' | '/auth' | '/admin' | '/historico' | '/perfil' | '/robos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/admin' | '/banca' | '/historico' | '/perfil' | '/robos'
+  to: '/' | '/auth' | '/admin' | '/historico' | '/perfil' | '/robos'
   id:
     | '__root__'
     | '/'
@@ -112,7 +101,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/_approved'
     | '/_authenticated/_approved/admin'
-    | '/_authenticated/_approved/banca'
     | '/_authenticated/_approved/historico'
     | '/_authenticated/_approved/perfil'
     | '/_authenticated/_approved/robos'
@@ -161,13 +149,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApprovedAdminRouteImport
       parentRoute: typeof AuthenticatedApprovedRouteRoute
     }
-    '/_authenticated/_approved/banca': {
-      id: '/_authenticated/_approved/banca'
-      path: '/banca'
-      fullPath: '/banca'
-      preLoaderRoute: typeof AuthenticatedApprovedBancaRouteImport
-      parentRoute: typeof AuthenticatedApprovedRouteRoute
-    }
     '/_authenticated/_approved/historico': {
       id: '/_authenticated/_approved/historico'
       path: '/historico'
@@ -194,7 +175,6 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedApprovedRouteRouteChildren {
   AuthenticatedApprovedAdminRoute: typeof AuthenticatedApprovedAdminRoute
-  AuthenticatedApprovedBancaRoute: typeof AuthenticatedApprovedBancaRoute
   AuthenticatedApprovedHistoricoRoute: typeof AuthenticatedApprovedHistoricoRoute
   AuthenticatedApprovedPerfilRoute: typeof AuthenticatedApprovedPerfilRoute
   AuthenticatedApprovedRobosRoute: typeof AuthenticatedApprovedRobosRoute
@@ -203,7 +183,6 @@ interface AuthenticatedApprovedRouteRouteChildren {
 const AuthenticatedApprovedRouteRouteChildren: AuthenticatedApprovedRouteRouteChildren =
   {
     AuthenticatedApprovedAdminRoute: AuthenticatedApprovedAdminRoute,
-    AuthenticatedApprovedBancaRoute: AuthenticatedApprovedBancaRoute,
     AuthenticatedApprovedHistoricoRoute: AuthenticatedApprovedHistoricoRoute,
     AuthenticatedApprovedPerfilRoute: AuthenticatedApprovedPerfilRoute,
     AuthenticatedApprovedRobosRoute: AuthenticatedApprovedRobosRoute,

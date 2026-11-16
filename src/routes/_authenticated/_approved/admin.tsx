@@ -270,10 +270,21 @@ function RobotControls() {
       </div>
 
       <div className="liquid-glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-destructive/30 bg-destructive/10 text-destructive"><Radio className="h-5 w-5" /></div>
+        <div className={cn(
+          "flex h-10 w-10 items-center justify-center rounded-xl border",
+          robot.apiPaused
+            ? "border-destructive/30 bg-destructive/10 text-destructive"
+            : "border-success/30 bg-success/10 text-success"
+        )}>
+          <Radio className="h-5 w-5" />
+        </div>
         <div className="flex-1">
-          <p className="font-semibold">Pausar API da mesa</p>
-          <p className="text-xs text-muted-foreground">Para de receber resultados da LynxMetrics.</p>
+          <p className="font-semibold">{robot.apiPaused ? "API da mesa pausada" : "API da mesa ligada"}</p>
+          <p className="text-xs text-muted-foreground">
+            {robot.apiPaused
+              ? "Clique no switch para ligar de novo e voltar a receber resultados."
+              : "Clique para pausar e parar de receber resultados da mesa."}
+          </p>
         </div>
         <Switch checked={robot.apiPaused} onCheckedChange={() => robot.toggleApiPause()} />
       </div>

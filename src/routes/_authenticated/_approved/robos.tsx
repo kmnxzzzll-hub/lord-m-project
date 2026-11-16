@@ -153,6 +153,7 @@ function RobotsPage() {
               <SignalOrb
                 key={`signal-${robot.key}`}
                 side={robot.signal.side}
+                signal={robot.signal}
                 phaseStart={robot.phaseStart}
                 phaseEnd={robot.phaseEnd}
               />
@@ -199,8 +200,14 @@ function Analyzing() {
       : reason === "result" && signal
         ? `Apostas fechadas. Aguardando o resultado da entrada no ${sideName(signal.side)}.`
         : reason === "no_pattern"
-          ? "Analisando padrões em formação. Aguardando confirmação segura."
-          : reason === "next_round"
+          ? "Analisando padrões em formação. Nenhum padrão claro ainda — sem entrada forçada."
+          : reason === "conflict"
+            ? "Player e Banker com leituras igualmente fortes. Entrada cancelada por segurança."
+            : reason === "cold_table"
+              ? "Mesa fria: as duas últimas leituras falharam. Aguardando a mesa voltar ao padrão."
+              : reason === "weak_pattern"
+                ? "O padrão formado está a falhar nesta mesa. Aguardando um padrão mais forte."
+                : reason === "next_round"
             ? "Aguardando a próxima rodada da mesa."
             : "Lendo a mesa e identificando padrões claros.";
 

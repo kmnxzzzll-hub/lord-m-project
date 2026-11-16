@@ -1,10 +1,8 @@
 /**
- * Bac Bo pattern engine.
- * Rounds: each side rolls two dice; higher sum wins, equal sums = tie (empate).
- * Patterns follow the classic Bac Bo strategy playbook:
- *  - Xadrez (1-1-1), Surf (tendência longa), Parzinho (2-2), 3-1-3, Rampa
- *  - No forced entries: only signal when a clear pattern matches (patience when chaotic)
- *  - Proteção de empate (sinaliza cobertura reforçada)
+ * Bac Bo pattern engine — expanded classic strategy set.
+ * Patterns follow the playbooks used in Bac Bo strategy e-books:
+ * Surf, Xadrez, Parzinho, Rampa, Perninhas, Espelho, Inversão, 3-1-3, 3-2-3, etc.
+ * Only signals on clear patterns (no forced entries).
  */
 
 export type Outcome = "P" | "B" | "T";
@@ -61,7 +59,7 @@ export function toRuns(outcomes: Outcome[]): Run[] {
   return runs;
 }
 
-/** Every pattern that currently matches, strongest first. No forced fallback. */
+/** Every clear pattern that currently matches, strongest first. No forced fallback. */
 export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
   const runs = toRuns(outcomes);
   const n = runs.length;
@@ -70,50 +68,99 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
   const cur = runs[n - 1]!;
   const at = (i: number) => runs[n - 1 - i]!; // 0 = current run
 
-  // Surf: current run of 3+ → follow the trend
+  // Surf / Tendência longa: 3+ do mesmo lado
   if (cur.len >= 3) {
     matches.push({
       side: toSide(cur.side),
       pattern: "Surf de tendência",
-      confidence: Math.min(88, 62 + (cur.len - 3) * 6),
+      confidence: Math.min(90, 64 + (cur.len - 3) * 5),
     });
   }
 
-  // Xadrez 1-1-1: 4+ alternating singles → break to the opposite side
+  // Xadrez 1-1-1: 4+ alternâncias simples → quebrar para o oposto
   let singles = 0;
   for (let i = 0; i < n && at(i).len === 1; i++) singles++;
   if (singles >= 4) {
     matches.push({
       side: toSide(opposite(cur.side)),
       pattern: "Xadrez 1-1-1",
-      confidence: Math.min(88, 64 + (singles - 4) * 5),
+      confidence: Math.min(88, 66 + (singles - 4) * 4),
     });
   }
 
   // Parzinho 2-2
   if (n >= 3 && at(1).len === 2 && at(2).len === 2) {
     if (cur.len === 1) {
-      matches.push({ side: toSide(cur.side), pattern: "Parzinho 2-2", confidence: 72 });
+      matches.push({ side: toSide(cur.side), pattern: "Parzinho 2-2", confidence: 74 });
     } else if (cur.len === 2) {
-      matches.push({ side: toSide(opposite(cur.side)), pattern: "Parzinho 2-2", confidence: 70 });
+      matches.push({ side: toSide(opposite(cur.side)), pattern: "Parzinho 2-2", confidence: 72 });
     }
   }
 
-  // 3-1-3: AAA B A(A) → complete the third block
+  // Parzinho 2-1-2
+  if (n >= 4 && at(1).len === 1 && at(2).len === 2 && at(3).len === 2) {
+    matches.push({ side: toSide(cur.side), pattern: "Parzinho 2-1-2", confidence: 71 });
+  }
+
+  // 3-1-3
   if (n >= 3 && at(2).len === 3 && at(1).len === 1 && cur.side === at(2).side && cur.len < 3) {
     matches.push({
       side: toSide(cur.side),
       pattern: "3-1-3",
+      confidence: cur.len === 2 ? 80 : 76,
+    });
+  }
+
+  // 3-2-3
+  if (n >= 3 && at(2).len === 3 && at(1).len === 2 && cur.side === at(2).side && cur.len < 3) {
+    matches.push({
+      side: toSide(cur.side),
+      pattern: "3-2-3",
       confidence: cur.len === 2 ? 78 : 74,
     });
   }
 
-  // Rampa: completed runs growing a, a+1, a+2 → current run keeps climbing
+  // Rampa / Pirâmide crescente
   if (n >= 4) {
     const a = at(3).len;
     if (at(2).len === a + 1 && at(1).len === a + 2 && cur.len < a + 3) {
-      matches.push({ side: toSide(cur.side), pattern: "Rampa", confidence: 70 });
+      matches.push({ side: toSide(cur.side), pattern: "Rampa", confidence: 73 });
     }
+  }
+
+  // Perninhas (sequências curtas alternadas 2-1-2-1 ou similar)
+  if (n >= 4 && at(0).len <= 2 && at(1).len <= 2 && at(2).len <= 2 && at(3).len <= 2) {
+    const alternating = at(0).side !== at(1).side && at(1).side !== at(2).side;
+    if (alternating) {
+      matches.push({
+        side: toSide(opposite(cur.side)),
+        pattern: "Perninhas",
+        confidence: 68,
+      });
+    }
+  }
+
+  // Espelho / Espelhamento (padrão que se repete)
+  if (n >= 6) {
+    const recent = runs.slice(-6);
+    const firstHalf = recent.slice(0, 3).map((r) => r.side + r.len).join("");
+    const secondHalf = recent.slice(3).map((r) => r.side + r.len).join("");
+    if (firstHalf === secondHalf) {
+      matches.push({
+        side: toSide(cur.side),
+        pattern: "Espelho",
+        confidence: 75,
+      });
+    }
+  }
+
+  // Inversão após sequência longa quebrada
+  if (n >= 2 && at(1).len >= 4 && cur.len === 1) {
+    matches.push({
+      side: toSide(cur.side),
+      pattern: "Inversão",
+      confidence: 69,
+    });
   }
 
   return matches.sort((x, y) => y.confidence - x.confidence);
@@ -121,11 +168,16 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
 
 /** Human-readable explanation for each pattern. */
 export const PATTERN_EXPLANATION: Record<string, string> = {
-  "Surf de tendência": "Surf: 3 ou mais vitórias seguidas do mesmo lado",
-  "Xadrez 1-1-1": "Xadrez 1-1-1: alternância perfeita de lados há 4+ rodadas",
+  "Surf de tendência": "Surf: 3 ou mais vitórias seguidas do mesmo lado — seguir a tendência",
+  "Xadrez 1-1-1": "Xadrez 1-1-1: alternância perfeita de lados há 4+ rodadas — quebrar",
   "Parzinho 2-2": "Parzinho 2-2: pares de 2 seguidos",
-  "3-1-3": "3-1-3: bloco de 3, um oposto, e completando o próximo",
-  "Rampa": "Rampa: sequências crescentes de comprimento",
+  "Parzinho 2-1-2": "Parzinho 2-1-2: estrutura de pares com um isolado",
+  "3-1-3": "3-1-3: bloco de 3, um oposto e completando o próximo",
+  "3-2-3": "3-2-3: bloco de 3, dois opostos e completando",
+  "Rampa": "Rampa: sequências crescentes de comprimento — continuar subindo",
+  "Perninhas": "Perninhas: sequências curtas alternadas — quebrar o ritmo",
+  "Espelho": "Espelho: o padrão recente está a repetir-se",
+  "Inversão": "Inversão: sequência longa quebrada — seguir o novo lado",
 };
 
 /** Decided rounds the fallback trend reading looks at. */

@@ -1,14 +1,14 @@
 /**
  * Shared robot timeline driven by the real Bac Bo Live table.
- * Signals reveal immediately (forced early).
+ * Signals reveal after a short analysis window (not forced immediate).
  */
 import { analyze, type Analysis, type Round, type Side, type Signal } from "./bacbo-engine";
 import type { LiveRound } from "./live-table";
 
 /** Typical time between two results at the Bac Bo Live table (measured ~33-38s). */
 export const ROUND_MS = 35_000;
-/** Signal is ready the instant the round settles (forced early reveal). */
-export const ANALYSIS_MS = 0;
+/** How long to wait after a round settles before revealing the signal (natural analysis window). */
+export const ANALYSIS_MS = 6_000;
 /** Estimated moment, after a round settles, when bets for the next round close. */
 export const BET_CLOSE_MS = 24_000;
 /** A round reaching us later than this after settling leaves too little time to bet: no signal. */
@@ -27,8 +27,8 @@ export function liveWindow(rounds: LiveRound[], now: number): LiveRound[] {
   return start === 0 ? rounds : rounds.slice(start);
 }
 
-/** When the signal after this round shows: immediately on settle (forced). */
-export const revealTime = (r: LiveRound) => r.settledAt;
+/** When the signal after this round shows: after the analysis window. */
+export const revealTime = (r: LiveRound) => r.settledAt + ANALYSIS_MS;
 export const arrivedLate = (r: LiveRound) =>
   r.receivedAt !== undefined && r.receivedAt - r.settledAt > LATE_MS;
 

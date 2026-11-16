@@ -3,8 +3,7 @@
  * Rounds: each side rolls two dice; higher sum wins, equal sums = tie (empate).
  * Patterns follow the classic Bac Bo strategy playbook:
  *  - Xadrez (1-1-1), Surf (tendência longa), Parzinho (2-2), 3-1-3, Rampa
- *  - Tendência da mesa: when no classic pattern is formed, follow the side that dominates
- *    the last rounds, so the robot has an entry ready for every round
+ *  - No forced entries: only signal when a clear pattern matches (patience when chaotic)
  *  - Proteção de empate (sinaliza cobertura reforçada)
  */
 
@@ -62,7 +61,7 @@ export function toRuns(outcomes: Outcome[]): Run[] {
   return runs;
 }
 
-/** Every pattern that currently matches, strongest first. */
+/** Every pattern that currently matches, strongest first. No forced fallback. */
 export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
   const runs = toRuns(outcomes);
   const n = runs.length;
@@ -117,17 +116,17 @@ export function matchPatterns(outcomes: Outcome[]): PatternMatch[] {
     }
   }
 
-  // Tendência da mesa: fallback reading of the last 8 decided rounds.
-  if (matches.length === 0) {
-    const recent = outcomes.filter((o) => o !== "T").slice(-TREND_WINDOW);
-    const p = recent.filter((o) => o === "P").length;
-    const b = recent.length - p;
-    const side = p === b ? cur.side : p > b ? "P" : "B";
-    matches.push({ side: toSide(side), pattern: "Tendência da mesa", confidence: 60 });
-  }
-
   return matches.sort((x, y) => y.confidence - x.confidence);
 }
+
+/** Human-readable explanation for each pattern. */
+export const PATTERN_EXPLANATION: Record<string, string> = {
+  "Surf de tendência": "Surf: 3 ou mais vitórias seguidas do mesmo lado",
+  "Xadrez 1-1-1": "Xadrez 1-1-1: alternância perfeita de lados há 4+ rodadas",
+  "Parzinho 2-2": "Parzinho 2-2: pares de 2 seguidos",
+  "3-1-3": "3-1-3: bloco de 3, um oposto, e completando o próximo",
+  "Rampa": "Rampa: sequências crescentes de comprimento",
+};
 
 /** Decided rounds the fallback trend reading looks at. */
 export const TREND_WINDOW = 8;

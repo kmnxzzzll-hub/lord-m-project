@@ -1,6 +1,8 @@
 /**
  * Bac Bo pattern engine — expanded classic strategy set.
  * Only entry + 1 gale. No G2.
+ * Every candidate pattern is checked against the table odds and its own recent record here
+ * (see `analyze`), so the robot holds back on weak, conflicting or cold readings.
  */
 
 export type Outcome = "P" | "B" | "T";
@@ -22,10 +24,6 @@ export interface PatternMatch {
   side: Side;
   pattern: string;
   confidence: number;
-}
-
-export interface Signal extends PatternMatch {
-  tieAlert: boolean;
 }
 
 const die = (rng: () => number) => 1 + Math.floor(rng() * 6);
@@ -173,11 +171,146 @@ export function tieAlert(outcomes: Outcome[]): boolean {
   return since >= 12 || since <= 2;
 }
 
-export function detectSignal(history: Round[], minConfidence: number): Signal | null {
+/* ------------------------------------------------------------------ */
+/* Math of the table                                                   */
+/* ------------------------------------------------------------------ */
+
+/** Exact Bac Bo odds with two fair dice per side: 146 of the 1296 throws are a tie. */
+export const P_TIE = 146 / 1296;
+/** Chance that Player (or Banker) wins one round. */
+export const P_SIDE = (1 - P_TIE) / 2;
+/** Chance that one entry is green when the tie is covered (side wins or tie) ≈ 55.6%. */
+export const BASE_GREEN = P_SIDE + P_TIE;
+
+/** How many past rounds each pattern is replayed over to measure how it is doing at this table. */
+export const BACKTEST_ROUNDS = 40;
+/** Weight of the table's base odds in the estimate (like 6 imaginary past entries). */
+const PRIOR_WEIGHT = 6;
+/** A pattern that has been tried 4+ times here and hits less than this is ignored. */
+export const MIN_PATTERN_RATE = 0.45;
+const MIN_PATTERN_SAMPLES = 4;
+/** Player and Banker readings closer than this are a conflict: no entry. */
+export const CONFLICT_MARGIN = 0.03;
+/** The robot's own last readings that, if all red, mark the table as cold. */
+export const COLD_STREAK = 2;
+
+export interface PatternRecord {
+  n: number;
+  hits: number;
+}
+
+export interface Signal extends PatternMatch {
+  tieAlert: boolean;
+  /** Estimated chance (0-100) that the entry is green, from the table odds and the pattern's record here. */
+  probability: number;
+  record: PatternRecord;
+  /** Other patterns that point to the same side. */
+  agree: string[];
+  /** Short explanation lines shown with the signal. */
+  reasons: string[];
+}
+
+export type SkipReason = "no_pattern" | "weak_pattern" | "conflict" | "cold_table";
+
+export interface Analysis {
+  signal: Signal | null;
+  reason: SkipReason | null;
+}
+
+export const isGreen = (side: Side, outcome: Outcome) =>
+  outcome === "T" || toSide(outcome) === side;
+
+/**
+ * Replays the engine over the recent rounds: for every past round, which patterns were formed
+ * just before it and whether their side (or a tie) came. Also returns the robot's top reading per round.
+ */
+export function backtest(outcomes: Outcome[], minConfidence: number, rounds = BACKTEST_ROUNDS) {
+  const records = new Map<string, PatternRecord>();
+  const picks: boolean[] = [];
+  for (let j = Math.max(4, outcomes.length - rounds); j < outcomes.length; j++) {
+    const ms = matchPatterns(outcomes.slice(0, j)).filter((m) => m.confidence >= minConfidence);
+    if (!ms.length) continue;
+    const next = outcomes[j]!;
+    for (const m of ms) {
+      const rec = records.get(m.pattern) ?? { n: 0, hits: 0 };
+      rec.n += 1;
+      if (isGreen(m.side, next)) rec.hits += 1;
+      records.set(m.pattern, rec);
+    }
+    picks.push(isGreen(ms[0]!.side, next));
+  }
+  return { records, picks };
+}
+
+/** Bayesian estimate of the green chance: the table odds, corrected by what the pattern did here. */
+export function estimateGreen(rec: PatternRecord): number {
+  return (rec.hits + PRIOR_WEIGHT * BASE_GREEN) / (rec.n + PRIOR_WEIGHT);
+}
+
+const pct = (x: number) => Math.round(x * 100);
+
+export function analyze(history: Round[], minConfidence: number): Analysis {
   const outcomes = history.map((r) => r.outcome);
-  const best = matchPatterns(outcomes)[0];
-  if (!best || best.confidence < minConfidence) return null;
-  return { ...best, tieAlert: tieAlert(outcomes) };
+  const matches = matchPatterns(outcomes).filter((m) => m.confidence >= minConfidence);
+  if (!matches.length) return { signal: null, reason: "no_pattern" };
+
+  const { records, picks } = backtest(outcomes, minConfidence);
+  const recent = picks.slice(-COLD_STREAK);
+  if (recent.length === COLD_STREAK && recent.every((g) => !g)) {
+    return { signal: null, reason: "cold_table" };
+  }
+
+  const scored = matches
+    .map((m) => {
+      const record = records.get(m.pattern) ?? { n: 0, hits: 0 };
+      return { m, record, estimate: estimateGreen(record) };
+    })
+    .filter(
+      ({ record }) => record.n < MIN_PATTERN_SAMPLES || record.hits / record.n >= MIN_PATTERN_RATE,
+    );
+  if (!scored.length) return { signal: null, reason: "weak_pattern" };
+
+  // Each side's reading: its best pattern plus a small bonus for every other pattern agreeing.
+  const sideScore = (side: Side) => {
+    const own = scored.filter((x) => x.m.side === side).sort((a, b) => b.estimate - a.estimate);
+    if (!own.length) return null;
+    const best = own[0]!;
+    const bonus = Math.min(0.03, (own.length - 1) * 0.01);
+    return { ...best, score: best.estimate + bonus, agree: own.slice(1).map((x) => x.m.pattern) };
+  };
+  const p = sideScore("player");
+  const b = sideScore("banker");
+  if (p && b && Math.abs(p.score - b.score) < CONFLICT_MARGIN) {
+    return { signal: null, reason: "conflict" };
+  }
+  const pick = !b || (p && p.score > b.score) ? p! : b;
+
+  const probability = Math.max(50, Math.min(85, pct(pick.score)));
+  const { record } = pick;
+  const reasons = [
+    PATTERN_EXPLANATION[pick.m.pattern] ?? pick.m.pattern,
+    record.n
+      ? `Nesta mesa acertou ${record.hits} de ${record.n} (${pct(record.hits / record.n)}%) nas últimas ${BACKTEST_ROUNDS} rodadas`
+      : `Padrão novo nesta mesa · base matemática de ${pct(BASE_GREEN)}% com empate coberto`,
+  ];
+  if (pick.agree.length) reasons.push(`Confirmado por: ${pick.agree.join(", ")}`);
+  if (p && b) reasons.push(`Lado oposto mais fraco (${pct((pick === p ? b : p).score)}%)`);
+
+  return {
+    signal: {
+      ...pick.m,
+      tieAlert: tieAlert(outcomes),
+      probability,
+      record,
+      agree: pick.agree,
+      reasons,
+    },
+    reason: null,
+  };
+}
+
+export function detectSignal(history: Round[], minConfidence: number): Signal | null {
+  return analyze(history, minConfidence).signal;
 }
 
 export function resolveAttempt(side: Side, outcome: Outcome): "win" | "tie" | "loss" {

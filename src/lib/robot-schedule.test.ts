@@ -31,8 +31,8 @@ function table(seq: string, lastAt: number): LiveRound[] {
 }
 
 const cfg: ScheduleConfig = { startedAt: T0, minConfidence: 60 };
-// Ends in a run of three Jogador wins → "Surf" pattern says Jogador next.
-const surf = (lastAt: number) => table("BPBBPPP", lastAt);
+// Ends in a run of three Player wins → "Surf" pattern says Player next.
+const surf = (lastAt: number) => table("PBBPPP", lastAt);
 
 describe("robot driven by the real table", () => {
   it("sends no signal while the admin has not switched the robot on", () => {
@@ -48,23 +48,27 @@ describe("robot driven by the real table", () => {
     expect(v.signal).toBeNull();
   });
 
-  it("analysis is automatic: the signal shows 1.5s after the round settles", () => {
-    expect(ANALYSIS_MS).toBe(1_500);
+  it("analysis is automatic: the signal shows as soon as the round settles", () => {
+    expect(ANALYSIS_MS).toBe(0);
     const at = T0 + 60_000;
-    const rounds = surf(at);
-    expect(robotView(cfg, rounds, at + 1_000).phase).toBe("analyzing");
-    const v = robotView(cfg, rounds, at + 1_500);
+    const v = robotView(cfg, surf(at), at);
     expect(v.phase).toBe("signal");
     expect(v.signal?.side).toBe("player");
-    expect(v.key).toBe("r6");
+    expect(v.key).toBe("r5");
   });
 
-  it("a round that reaches us late shows its signal at once on arrival", () => {
+  it("a round that reaches us a little late still shows its signal on arrival", () => {
     const at = T0 + 60_000;
     const rounds = surf(at);
     rounds[rounds.length - 1]!.receivedAt = at + 8_000;
-    expect(robotView(cfg, rounds, at + 7_900).phase).toBe("analyzing");
     expect(robotView(cfg, rounds, at + 8_000).phase).toBe("signal");
+  });
+
+  it("tells why it holds back when the table is cold", () => {
+    const at = T0 + 60_000;
+    const v = robotView(cfg, table("BPBBPPP", at), at + 1_000);
+    expect(v.signal).toBeNull();
+    expect(v.reason).toBe("cold_table");
   });
 
   it("skips the signal when the round arrives with too little time to bet", () => {
@@ -74,7 +78,7 @@ describe("robot driven by the real table", () => {
     const v = robotView(cfg, rounds, at + 18_500);
     expect(v.phase).toBe("analyzing");
     expect(v.signal).toBeNull();
-    expect(signalsBetween(cfg, rounds, T0, at + 30_000).map((s) => s.key)).not.toContain("r6");
+    expect(signalsBetween(cfg, rounds, T0, at + 30_000).map((s) => s.key)).not.toContain("r5");
   });
 
   it("when bets close the entry leaves the screen and waits for its result", () => {

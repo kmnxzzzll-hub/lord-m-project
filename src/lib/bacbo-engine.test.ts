@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  analyze,
+  BASE_GREEN,
   computeStats,
+  estimateGreen,
+  P_TIE,
   detectSignal,
   distribution,
   matchPatterns,
@@ -33,7 +37,7 @@ describe("bac bo patterns", () => {
 
   it("3-1-3: BBB P BB → completes the banker block", () => {
     const m = matchPatterns(seq("BBBPBB")).find((x) => x.pattern === "3-1-3");
-    expect(m).toMatchObject({ side: "banker", confidence: 78 });
+    expect(m).toMatchObject({ side: "banker", confidence: 80 });
   });
 
   it("ties are skipped when reading runs", () => {
@@ -49,35 +53,26 @@ describe("bac bo patterns", () => {
   });
 });
 
-describe("signal resolution (entry + 2 gales, tie covered)", () => {
+describe("signal resolution (entry + 1 gale, tie covered)", () => {
   it("first round win is GREEN DIRETO", () => {
     expect(resolveSignal("player", seq("P")).result).toBe("green_g0");
   });
-  it("win on the second round is G1, third is G2", () => {
+  it("win on the second round is G1; there is no G2", () => {
     expect(resolveSignal("player", seq("BP")).result).toBe("green_g1");
-    expect(resolveSignal("banker", seq("PPB")).result).toBe("green_g2");
+    expect(resolveSignal("banker", seq("PPB")).result).toBe("red");
   });
   it("a tie counts as green because the tie is covered", () => {
     expect(resolveSignal("banker", seq("PT"))).toMatchObject({ result: "green_g1", tieHit: true });
   });
-  it("three losses is RED", () => {
-    expect(resolveSignal("player", seq("BBB")).result).toBe("red");
+  it("two losses is RED", () => {
+    expect(resolveSignal("player", seq("BB")).result).toBe("red");
   });
 });
 
 describe("stats", () => {
   it("accuracy, streak and gale counts", () => {
-    const s = computeStats(["green_g0", "green_g1", "red", "green_g2"]);
-    expect(s).toMatchObject({
-      total: 4,
-      greens: 3,
-      accuracy: 75,
-      streak: 2,
-      g0: 1,
-      g1: 1,
-      g2: 1,
-      reds: 1,
-    });
+    const s = computeStats(["green_g0", "green_g1", "red", "green_g1"]);
+    expect(s).toMatchObject({ total: 4, greens: 3, accuracy: 75, streak: 2, g0: 1, g1: 2, reds: 1 });
   });
   it("distribution sums to 100 and tie stays between 5 and 15", () => {
     const d = distribution(rounds("PPPPPPPPPPTTTTTTTTTT"));
@@ -90,14 +85,34 @@ describe("stats", () => {
   });
 });
 
-describe("tendência da mesa", () => {
-  const seq = (s: string) => s.split("") as ("P" | "B" | "T")[];
-  it("gives an entry when no classic pattern is formed, following the dominant side", () => {
-    const m = matchPatterns(seq("PPBPPBPB"));
-    expect(m).toHaveLength(1);
-    expect(m[0]).toMatchObject({ pattern: "Tendência da mesa", side: "player" });
+describe("signal math", () => {
+  it("uses the exact dice odds: tie 146/1296, one covered entry ≈ 55.6% green", () => {
+    expect(P_TIE).toBeCloseTo(0.1127, 4);
+    expect(BASE_GREEN).toBeCloseTo(0.5563, 4);
   });
-  it("is not used when a classic pattern exists", () => {
-    expect(matchPatterns(seq("BPPP")).map((x) => x.pattern)).not.toContain("Tendência da mesa");
+  it("a pattern with no record here is estimated at the table odds", () => {
+    expect(estimateGreen({ n: 0, hits: 0 })).toBeCloseTo(BASE_GREEN, 6);
+    expect(estimateGreen({ n: 6, hits: 6 })).toBeGreaterThan(BASE_GREEN);
+    expect(estimateGreen({ n: 6, hits: 0 })).toBeLessThan(BASE_GREEN);
+  });
+  it("no forced entry when no pattern is formed", () => {
+    expect(analyze(rounds("PPPBB"), 60)).toEqual({ signal: null, reason: "no_pattern" });
+  });
+  it("waits when the robot's last two readings were red (cold table)", () => {
+    expect(analyze(rounds("BPBBPPP"), 60).reason).toBe("cold_table");
+  });
+  it("skips when Player and Banker readings are equally strong", () => {
+    expect(analyze(rounds("PPBBPB"), 60).reason).toBe("conflict");
+  });
+  it("ignores a pattern that keeps failing at this table", () => {
+    expect(analyze(rounds("BPBPPPBPBPBB"), 60).reason).toBe("weak_pattern");
+  });
+  it("a signal carries its estimated chance, record and explanation", () => {
+    const s = analyze(rounds("PPPPPPPPPP"), 60).signal!;
+    expect(s.side).toBe("player");
+    expect(s.record).toEqual({ n: 6, hits: 6 });
+    expect(s.probability).toBeGreaterThanOrEqual(50);
+    expect(s.probability).toBeLessThanOrEqual(85);
+    expect(s.reasons[1]).toContain("6 de 6");
   });
 });

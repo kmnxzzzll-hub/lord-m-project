@@ -2,7 +2,7 @@
  * Shared robot timeline driven by the real Bac Bo Live table.
  * Signals reveal immediately (forced early).
  */
-import { detectSignal, type Round, type Side, type Signal } from "./bacbo-engine";
+import { analyze, type Analysis, type Round, type Side, type Signal } from "./bacbo-engine";
 import type { LiveRound } from "./live-table";
 
 /** Typical time between two results at the Bac Bo Live table (measured ~33-38s). */
@@ -45,6 +45,9 @@ export type WaitReason =
   | "collecting"
   | "next_round"
   | "no_pattern"
+  | "weak_pattern"
+  | "conflict"
+  | "cold_table"
   | "result"
   | "paused"
   | null;
@@ -62,22 +65,31 @@ export interface RobotView {
   lastRound: LiveRound | null;
 }
 
-const signalCache = new Map<string, Signal | null>();
+const analysisCache = new Map<string, Analysis | null>();
+
+/** The robot's full reading after round `index` (signal, or why it held back). Cached per round. */
+export function analysisAfter(
+  rounds: LiveRound[],
+  index: number,
+  minConfidence: number,
+): Analysis | null {
+  const round = rounds[index];
+  if (!round || index + 1 < MIN_HISTORY) return null;
+  const key = `${round.id}:${minConfidence}`;
+  if (analysisCache.has(key)) return analysisCache.get(key)!;
+  const history = rounds.slice(Math.max(0, index + 1 - HISTORY), index + 1);
+  const result = analyze(history, minConfidence);
+  if (analysisCache.size > 500) analysisCache.clear();
+  analysisCache.set(key, result);
+  return result;
+}
 
 export function signalAfter(
   rounds: LiveRound[],
   index: number,
   minConfidence: number,
 ): Signal | null {
-  const round = rounds[index];
-  if (!round || index + 1 < MIN_HISTORY) return null;
-  const key = `${round.id}:${minConfidence}`;
-  if (signalCache.has(key)) return signalCache.get(key)!;
-  const history = rounds.slice(Math.max(0, index + 1 - HISTORY), index + 1);
-  const signal = detectSignal(history, minConfidence);
-  if (signalCache.size > 500) signalCache.clear();
-  signalCache.set(key, signal);
-  return signal;
+  return analysisAfter(rounds, index, minConfidence)?.signal ?? null;
 }
 
 export function robotView(
@@ -122,7 +134,8 @@ export function robotView(
   const i = rounds.length - 1;
   const settled = lastRound.settledAt;
   const late = arrivedLate(lastRound);
-  const signal = late ? null : signalAfter(rounds, i, cfg.minConfidence);
+  const analysis = late ? null : analysisAfter(rounds, i, cfg.minConfidence);
+  const signal = analysis?.signal ?? null;
   const revealAt = revealTime(lastRound);
   const closeAt = settled + BET_CLOSE_MS;
   const history = rounds.slice(Math.max(0, i + 1 - HISTORY));
@@ -171,7 +184,12 @@ export function robotView(
     phaseEnd: settled + ROUND_MS,
     wakeAt: settled + STALE_MS,
     waiting: true,
-    reason: rounds.length < MIN_HISTORY ? "collecting" : late ? "next_round" : "no_pattern",
+    reason:
+      rounds.length < MIN_HISTORY
+        ? "collecting"
+        : late
+          ? "next_round"
+          : (analysis?.reason ?? "no_pattern"),
     signal: null,
   };
 }

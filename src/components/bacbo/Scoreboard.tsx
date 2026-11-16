@@ -20,7 +20,6 @@ export function Scoreboard() {
     { label: "Sequência", value: s.best, tone: "text-tie" },
   ];
 
-  // Temperature: green if recent rate good or streak, red if consecutive reds
   const recentReds = results.slice(-3).filter((r) => !r.green).length;
   const temp = recentReds >= 2 || (s.total > 5 && s.rate < 50) ? "red" : "green";
 
@@ -53,22 +52,15 @@ export function Scoreboard() {
   );
 }
 
-/** How long the win/loss notice stays on screen before it leaves by itself. */
 export const RESULT_BANNER_MS = 2_600;
-/** A result is announced only if its entry was shown less than this long ago (about one round). */
 const RESULT_FRESH_MS = 75_000;
 
-/**
- * Floating liquid-glass notice shown when a real round settles an entry: green (a tie counts as
- * green) or loss. It closes on its own after RESULT_BANNER_MS.
- */
 export function ResultBanner() {
   const results = useSessionResults();
   const seen = useRef<Set<string> | null>(null);
   const [show, setShow] = useState<SignalResult | null>(null);
   const [streakBanner, setStreakBanner] = useState<"greens" | "reds" | null>(null);
 
-  // Detect results that are new since the last look (the first look only marks what exists).
   useEffect(() => {
     if (!seen.current) {
       seen.current = new Set(results.map((r) => r.key));
@@ -76,20 +68,17 @@ export function ResultBanner() {
     }
     const fresh = results.filter((r) => !seen.current!.has(r.key));
     fresh.forEach((r) => seen.current!.add(r.key));
-    // Only results that just happened; opening the app never replays older ones.
     const latest = fresh.filter((r) => Date.now() - r.at < RESULT_FRESH_MS).at(-1);
     if (latest) setShow(latest);
 
-    // Check streaks for special banners
-    const last5 = results.slice(-5);
-    if (last5.length === 5 && last5.every((r) => r.green)) {
-      setStreakBanner("greens");
-    } else if (results.slice(-3).every((r) => !r.green) && results.length >= 3) {
+    const last3 = results.slice(-3);
+    if (last3.length === 3 && last3.every((r) => !r.green)) {
       setStreakBanner("reds");
+    } else if (results.slice(-5).length === 5 && results.slice(-5).every((r) => r.green)) {
+      setStreakBanner("greens");
     }
   }, [results]);
 
-  // Its own timer, so table refreshes every few seconds can never keep the notice stuck.
   const showKey = show?.key;
   useEffect(() => {
     if (!showKey) return;
@@ -99,7 +88,7 @@ export function ResultBanner() {
 
   useEffect(() => {
     if (!streakBanner) return;
-    const t = setTimeout(() => setStreakBanner(null), 4000);
+    const t = setTimeout(() => setStreakBanner(null), 5000);
     return () => clearTimeout(t);
   }, [streakBanner]);
 
@@ -202,8 +191,9 @@ export function ResultBanner() {
                 </>
               ) : (
                 <>
+                  <span className="text-2xl">😭</span>
                   <AlertTriangle className="h-5 w-5 text-destructive" />
-                  <span>🔴 Mesa manipulando, não fique teimoso!</span>
+                  <span>MESA MANIPULANDO, SAI NÃO FIQUE TEIMOSO</span>
                 </>
               )}
             </motion.div>

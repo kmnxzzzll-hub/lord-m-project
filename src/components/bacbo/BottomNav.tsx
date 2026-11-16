@@ -14,7 +14,6 @@ export function BottomNav() {
   const { pathname } = useLocation();
   const router = useRouter();
 
-  // Load every tab's page in the background right after sign-in, so even the first tap is instant.
   useEffect(() => {
     const t = setTimeout(() => {
       for (const { to } of items) void router.preloadRoute({ to }).catch(() => {});
@@ -25,7 +24,7 @@ export function BottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40">
       <div className="mx-auto max-w-md px-3.5 pb-safe sm:px-4">
-        <div className="glass flex items-center justify-around rounded-[1.4rem] bg-background/70 px-1.5 py-1.5 sm:rounded-[1.6rem] sm:px-2 sm:py-2">
+        <div className="liquid-glass flex items-center justify-around rounded-[1.5rem] px-1.5 py-1.5 sm:rounded-[1.7rem] sm:px-2 sm:py-2">
           {items.map(({ to, label, icon: Icon }) => {
             const active = pathname.startsWith(to);
             return (
@@ -37,14 +36,14 @@ export function BottomNav() {
                 {active && (
                   <motion.span
                     layoutId="nav-pill"
-                    className="absolute inset-0 rounded-2xl bg-foreground/[0.07] ring-1 ring-foreground/10"
+                    className="absolute inset-0 rounded-2xl bg-player/15 ring-1 ring-player-glow/25"
                     transition={{ type: "spring", stiffness: 420, damping: 32 }}
                   />
                 )}
                 <Icon
                   className={cn(
                     "relative h-[18px] w-[18px] transition-colors sm:h-5 sm:w-5",
-                    active ? "text-foreground" : "text-muted-foreground",
+                    active ? "text-player-glow" : "text-muted-foreground",
                   )}
                 />
                 <span

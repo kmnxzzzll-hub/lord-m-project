@@ -30,16 +30,16 @@ export function Scoreboard() {
 
   const qualityClass =
     quality === "boa"
-      ? "bg-success/15 text-success"
+      ? "bg-success/12 text-success ring-1 ring-success/25"
       : quality === "fria"
-        ? "bg-destructive/15 text-destructive"
-        : "bg-tie/15 text-tie";
+        ? "bg-destructive/12 text-destructive ring-1 ring-destructive/25"
+        : "bg-tie/12 text-tie ring-1 ring-tie/20";
 
   return (
-    <div className="space-y-2">
-      <div className="liquid-glass grid grid-cols-4 rounded-[1.4rem] px-2 py-2.5">
+    <div className="space-y-2.5">
+      <div className="liquid-glass grid grid-cols-4 rounded-[1.5rem] px-2 py-3 sm:py-3.5">
         {items.map((i) => (
-          <div key={i.label} className="flex flex-col items-center">
+          <div key={i.label} className="flex flex-col items-center gap-0.5">
             <span className={cn("font-display text-lg font-extrabold tabular-nums sm:text-xl", i.tone)}>
               {i.value}
             </span>
@@ -50,9 +50,19 @@ export function Scoreboard() {
         ))}
       </div>
       <div className="flex justify-center">
-        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold", qualityClass)}>
-          <span className={cn("h-2 w-2 rounded-full", quality === "boa" ? "bg-success" : quality === "fria" ? "bg-destructive" : "bg-tie")} />
-          Qualidade da mesa: {quality === "boa" ? "Boa" : quality === "fria" ? "Fria" : "Normal"}
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold",
+            qualityClass,
+          )}
+        >
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              quality === "boa" ? "bg-success" : quality === "fria" ? "bg-destructive" : "bg-tie",
+            )}
+          />
+          Mesa {quality === "boa" ? "boa" : quality === "fria" ? "fria" : "normal"}
         </span>
       </div>
     </div>
@@ -78,7 +88,7 @@ export function ResultBanner() {
     const latest = fresh.filter((r) => Date.now() - r.at < RESULT_FRESH_MS).at(-1);
     if (latest) setShow(latest);
 
-    // Only celebrate green streaks — 3 reds pause silently (no animation)
+    // Só celebra sequência de greens — 3 reds pausam em silêncio (sem animação)
     if (results.slice(-5).length === 5 && results.slice(-5).every((r) => r.green)) {
       setStreakBanner("greens");
     }
@@ -144,10 +154,19 @@ export function ResultBanner() {
                         : "ball-banker",
                 )}
               >
-                {show.green ? <Check className="h-5 w-5" strokeWidth={3} /> : <X className="h-5 w-5" strokeWidth={3} />}
+                {show.green ? (
+                  <Check className="h-5 w-5" strokeWidth={3} />
+                ) : (
+                  <X className="h-5 w-5" strokeWidth={3} />
+                )}
               </motion.span>
               <div className="min-w-0 leading-tight">
-                <p className={cn("font-display text-sm font-extrabold", show.green ? "text-success" : "text-destructive")}>
+                <p
+                  className={cn(
+                    "font-display text-sm font-extrabold",
+                    show.green ? "text-success" : "text-destructive",
+                  )}
+                >
                   {show.green ? (show.tie ? "GREEN (Empate)" : "GREEN") : "RED"}
                 </p>
                 <p className="truncate text-xs text-foreground/80">
@@ -172,7 +191,7 @@ export function ResultBanner() {
               className="liquid-glass flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold shadow-lg"
             >
               <PartyPopper className="h-5 w-5 text-success" />
-              <span>💰 Surra no branco, dinheiro no bolso 💰</span>
+              <span>Surra no branco, dinheiro no bolso</span>
             </motion.div>
           </div>
         )}

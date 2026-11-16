@@ -27,7 +27,6 @@ function HistoryPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
-  // Reset visual when we hit exactly 20 (platform starts a new cycle)
   const cycleKey = Math.floor(results.length / 20);
 
   return (
@@ -52,34 +51,19 @@ function HistoryPage() {
           </p>
         </div>
       ) : (
-        <div key={cycleKey} className="liquid-glass rounded-[1.75rem] p-4 sm:p-5">
-          <ul className="flex flex-wrap justify-center gap-2.5 sm:gap-3">
+        <div key={cycleKey} className="liquid-glass rounded-[1.75rem] px-4 py-3.5 sm:px-5 sm:py-4">
+          <ul className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             {results.map((r) => (
               <motion.li
                 key={r.key}
                 layoutId={`card-${r.key}`}
                 onClick={() => setSelected(r.key)}
                 className="cursor-pointer transition-transform active:scale-95"
-                whileHover={{ scale: 1.08 }}
+                whileHover={{ scale: 1.12 }}
+                title={r.side === "player" ? "Player" : "Banker"}
               >
-                <span
-                  className={cn(
-                    "relative inline-flex h-11 w-11 items-center justify-center rounded-full font-display text-sm font-bold text-foreground shadow-md sm:h-12 sm:w-12",
-                    r.green ? "ball-player" : "ball-banker",
-                  )}
-                  style={{
-                    // Force green / red look for result, not side colors
-                    background: r.green
-                      ? "radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35), transparent 45%), linear-gradient(145deg, #22c55e, #16a34a)"
-                      : "radial-gradient(circle at 30% 25%, rgba(255,255,255,0.25), transparent 45%), linear-gradient(145deg, #ef4444, #dc2626)",
-                    boxShadow: r.green
-                      ? "0 4px 14px -4px rgba(34,197,94,0.55)"
-                      : "0 4px 14px -4px rgba(239,68,68,0.55)",
-                  }}
-                >
-                  <span className="absolute left-[22%] top-[14%] h-[22%] w-[34%] rounded-full bg-foreground/40 blur-[1px]" />
-                  <span className="relative drop-shadow">{r.green ? "G" : "R"}</span>
-                </span>
+                {/* Bolinha pequenininha na cor do sinal (Player azul / Banker vermelho) — sem G/R */}
+                <Ball kind={r.side} size={isMobile ? 18 : 20} />
               </motion.li>
             ))}
           </ul>
@@ -89,7 +73,7 @@ function HistoryPage() {
       <AnimatePresence>
         {selected && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -97,30 +81,33 @@ function HistoryPage() {
           >
             <motion.div
               layoutId={`card-${selected}`}
-              className="liquid-glass relative w-full max-w-md rounded-[1.75rem] p-5 sm:p-6"
+              className="liquid-glass relative w-full max-w-sm rounded-[1.75rem] p-5 sm:p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setSelected(null)}
-                className="absolute right-3 top-3 rounded-full p-1 text-muted-foreground hover:bg-muted"
+                className="absolute right-3 top-3 rounded-full p-1.5 text-muted-foreground hover:bg-muted"
               >
                 <X className="h-4 w-4" />
               </button>
-              <p className="text-center text-sm text-muted-foreground">Detalhe do sinal</p>
+              <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                Detalhe do sinal
+              </p>
               <div className="mt-4 flex justify-center gap-3">
                 {results
                   .filter((r) => r.key === selected)
                   .map((r) => (
                     <div key={r.key} className="text-center">
-                      <Ball
-                        kind={r.side}
-                        label={r.side === "player" ? "P" : "B"}
-                        size={64}
-                      />
-                      <p className={cn("mt-2 font-display text-lg font-bold", r.green ? "text-success" : "text-destructive")}>
+                      <Ball kind={r.side} label={r.side === "player" ? "P" : "B"} size={56} />
+                      <p
+                        className={cn(
+                          "mt-2.5 font-display text-base font-bold",
+                          r.green ? "text-success" : "text-destructive",
+                        )}
+                      >
                         {r.green ? (r.tie ? "GREEN (Empate)" : "GREEN") : "RED"}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         {new Date(r.at).toLocaleTimeString("pt-BR")}
                       </p>
                     </div>
@@ -150,7 +137,7 @@ function RoundsList({ rounds, isMobile }: { rounds: any[]; isMobile: boolean }) 
     );
   }
   return (
-    <ul className="liquid-glass divide-y divide-border/60 rounded-[1.75rem] px-4 sm:px-5">
+    <ul className="liquid-glass divide-y divide-border/50 rounded-[1.75rem] px-4 sm:px-5">
       {rounds.map((r) => (
         <li key={r.id} className="flex items-center gap-3 py-2.5">
           <Ball

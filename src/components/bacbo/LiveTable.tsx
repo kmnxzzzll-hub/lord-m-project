@@ -27,8 +27,8 @@ export function DieFace({
     <span
       aria-label={`${value}`}
       className={cn(
-        "grid grid-cols-3 grid-rows-3 place-items-center rounded-[26%] bg-card p-[14%] ring-1",
-        tone === "player" ? "ring-player-glow/50" : "ring-banker-glow/50",
+        "grid grid-cols-3 grid-rows-3 place-items-center rounded-[26%] bg-card/90 p-[14%] ring-1",
+        tone === "player" ? "ring-player-glow/45" : "ring-banker-glow/45",
       )}
       style={{ width: size, height: size }}
     >
@@ -76,14 +76,14 @@ function SideDice({ round, side }: { round: LiveRound | null; side: "player" | "
   );
 }
 
-/** Last live result at the table; zeros while the table is not connected. */
+/** Último resultado ao vivo da mesa. */
 export function LiveTableCard({ rounds }: { rounds: LiveRound[] }) {
   const last = rounds[rounds.length - 1] ?? null;
 
   return (
-    <div className="glass rounded-[1.5rem] p-3.5 sm:p-4">
+    <div className="liquid-glass rounded-[1.5rem] p-3.5 sm:p-4">
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-[0.2em]">
+        <span className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-[0.18em]">
           <Radio className={cn("h-3.5 w-3.5", last ? "text-success" : "text-muted-foreground")} />
           Mesa ao vivo
         </span>
@@ -93,7 +93,12 @@ export function LiveTableCard({ rounds }: { rounds: LiveRound[] }) {
             last ? "text-success" : "text-destructive",
           )}
         >
-          <span className={cn("h-1.5 w-1.5 rounded-full", last ? "bg-success" : "bg-destructive")} />
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              last ? "bg-success shadow-[0_0_8px_var(--success)]" : "bg-destructive",
+            )}
+          />
           {last ? "Conectada" : "Sem conexão"}
         </span>
       </div>

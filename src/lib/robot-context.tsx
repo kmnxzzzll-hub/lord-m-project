@@ -142,7 +142,7 @@ export function RobotProvider({
     });
   }, [cfg, rounds, now, sessionStart, userId, maintenance, apiPaused]);
 
-  // Auto-pause after 3 consecutive losses
+  // Auto-pause after 3 consecutive losses — silent (no toast / animation)
   useEffect(() => {
     if (!active || isPaused) return;
     const results = scoreSignals(sessionSignals, rounds);
@@ -158,7 +158,6 @@ export function RobotProvider({
           updated_at: new Date().toISOString(),
         })
         .eq("id", 1);
-      toast.error("MESA MANIPULANDO, SAI NÃO FIQUE TEIMOSO. Robô pausado 5 minutos.");
       logAdminAction("Auto-pausa após 3 reds");
     }
   }, [sessionSignals, rounds, active, isPaused]);

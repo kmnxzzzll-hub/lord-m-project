@@ -27,6 +27,9 @@ export const allProfilesQuery = queryOptions({
     if (error) throw error;
     return data;
   },
+  // Admin sees new pending registrations without manual refresh.
+  refetchInterval: 8_000,
+  staleTime: 4_000,
 });
 
 export type MyAccount = { profile: Profile | null; isAdmin: boolean };

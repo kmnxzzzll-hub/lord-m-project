@@ -1,18 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { rowToLiveRound, type LiveRound } from "./live-table";
+import { isProviderId, PROVIDER_LIST, type ProviderId } from "./providers";
 import { syncLiveRounds } from "./live-table.server";
 
 export interface LiveTableData {
-  /** Real rounds, oldest first. */
   rounds: LiveRound[];
-  /** Server clock when the answer was produced, to line every device up on the same time. */
   serverNow: number;
-  /** Feed health; only filled in for the admin. */
   feed: { lastSuccessAt: number | null; lastError: string | null } | null;
 }
 
-/** Latest real rounds from the Bac Bo Live table. Approved users only. */
+/** Lista de provedores (só ids e textos) para o select do admin. */
+export const listProviders = createServerFn({ method: "GET" }).handler(async () => PROVIDER_LIST);
+
 export const getLiveTable = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<LiveTableData> => {
@@ -21,7 +21,6 @@ export const getLiveTable = createServerFn({ method: "GET" })
     });
     if (!approved) throw new Error("Conta não aprovada.");
 
-    // A feed problem must never hide the rounds already stored from anyone.
     await syncLiveRounds().catch((e) => console.error("sync failed", e));
 
     const [roundsRes, feedRes] = await Promise.all([
@@ -32,7 +31,6 @@ export const getLiveTable = createServerFn({ method: "GET" })
         )
         .order("settled_at", { ascending: false })
         .limit(60),
-      // RLS returns this row to the admin only.
       context.supabase
         .from("live_feed_status")
         .select("last_success_at, last_error")
@@ -60,13 +58,16 @@ export const getLiveTable = createServerFn({ method: "GET" })
     };
   });
 
-/** Admin only: saves a new LynxMetrics key, tests it and reconnects the table at once. */
+/** Admin: salva provedor + chave, testa e reconecta a mesa na hora. */
 export const connectLiveTable = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { key: string }) => {
+  .inputValidator((input: { key: string; provider?: string }) => {
     const key = String(input?.key ?? "").trim();
     if (key.length < 8 || key.length > 500) throw new Error("Chave inválida.");
-    return { key };
+    const provider: ProviderId = isProviderId(input?.provider ?? "")
+      ? (input.provider as ProviderId)
+      : "lynxmetrics";
+    return { key, provider };
   })
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
@@ -76,12 +77,14 @@ export const connectLiveTable = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Apenas o administrador pode trocar a chave.");
     if (!(await import("./admin-client.server")).serviceKey())
       return { ok: false, error: "missing_service_key" };
-    const { testFeedKey, saveFeedKey } = await import("./live-table.server");
-    const problem = await testFeedKey(data.key);
+
+    const { testFeedKey, saveFeedConfig } = await import("./live-table.server");
+    const problem = await testFeedKey(data.key, data.provider);
     if (problem) return { ok: false, error: problem };
+
     const { getAdminClient } = await import("./admin-client.server");
     const supabaseAdmin = getAdminClient();
-    await saveFeedKey(supabaseAdmin, data.key);
+    await saveFeedConfig(supabaseAdmin, { provider: data.provider, key: data.key });
     await syncLiveRounds(true);
     return { ok: true, error: null };
   });

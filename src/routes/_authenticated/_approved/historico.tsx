@@ -24,7 +24,8 @@ export const Route = createFileRoute("/_authenticated/_approved/historico")({
 
 function HistoryPage() {
   const { sessionSignals, rounds } = useRobot();
-  const recent = rounds.slice(-36).reverse();
+  const recent = rounds.slice(-20).reverse();
+  const recentSignals = sessionSignals.slice(0, 20);
   const isMobile = useIsMobile();
 
   return (
@@ -36,12 +37,12 @@ function HistoryPage() {
         <div>
           <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">Histórico</h1>
           <p className="text-xs text-muted-foreground">
-            Sinais desta sessão · {sessionSignals.length}
+            Sinais desta sessão · {recentSignals.length} (últimos 20)
           </p>
         </div>
       </header>
 
-      {sessionSignals.length === 0 ? (
+      {recentSignals.length === 0 ? (
         <div className="glass rounded-[1.75rem] p-8 text-center">
           <p className="font-display text-lg font-bold">Nenhum sinal nesta sessão</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -51,7 +52,7 @@ function HistoryPage() {
       ) : (
         <div className="glass rounded-[1.75rem] p-4 sm:p-5">
           <ul className="grid grid-cols-6 gap-2 sm:grid-cols-8 sm:gap-3 lg:grid-cols-12">
-            {sessionSignals.map((s, i) => (
+            {recentSignals.map((s, i) => (
               <motion.li
                 key={s.key}
                 initial={{ opacity: 0, scale: 0.4 }}
@@ -77,7 +78,7 @@ function HistoryPage() {
 
       <section className="mt-5 sm:mt-6">
         <h2 className="pb-2.5 font-display text-base font-bold sm:text-lg">
-          Rodadas da mesa · {recent.length}
+          Rodadas da mesa · {recent.length} (últimas 20)
         </h2>
         {recent.length === 0 ? (
           <div className="glass rounded-[1.75rem] p-6 text-center text-sm text-muted-foreground">

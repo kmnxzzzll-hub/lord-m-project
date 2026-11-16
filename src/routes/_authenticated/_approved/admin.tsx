@@ -289,6 +289,8 @@ function RobotControls() {
         <Switch checked={robot.apiPaused} onCheckedChange={() => robot.toggleApiPause()} />
       </div>
 
+      <FeedStatus />
+
       <div className="liquid-glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie"><Wrench className="h-5 w-5" /></div>
         <div className="flex-1">
@@ -297,6 +299,70 @@ function RobotControls() {
         </div>
         <Switch checked={maintenance} onCheckedChange={(v) => { setMaintenance(v); save.mutate({ maintenance: v }); }} />
       </div>
+    </div>
+  );
+}
+
+function FeedStatus() {
+  const queryClient = useQueryClient();
+  const { data } = useQuery(liveTableQuery);
+  const feed = data?.feed;
+  const errorMsg = feedErrorMessage(feed?.lastError);
+  const [key, setKey] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const connect = useServerFn(connectLiveTable);
+
+  async function onConnect(e: FormEvent) {
+    e.preventDefault();
+    if (!key.trim()) return;
+    setSaving(true);
+    try {
+      const res = await connect({ data: { key: key.trim() } });
+      if (!res.ok) {
+        toast.error(feedErrorMessage(res.error) ?? "Não foi possível conectar a chave.");
+        return;
+      }
+      setKey("");
+      toast.success("Mesa conectada com a nova chave");
+      void queryClient.invalidateQueries({ queryKey: liveTableQuery.queryKey });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao conectar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="liquid-glass space-y-3 rounded-2xl p-4 sm:p-5">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-tie/30 bg-tie/10 text-tie">
+          <KeyRound className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="font-semibold">Chave da API (LynxMetrics)</p>
+          <p className="text-xs text-muted-foreground">
+            {errorMsg ?? (feed?.lastSuccessAt ? "Mesa a receber dados." : "Cole a chave para ligar a mesa.")}
+          </p>
+        </div>
+      </div>
+      <form onSubmit={onConnect} className="flex gap-2">
+        <input
+          type="password"
+          placeholder="Cole a chave da LynxMetrics"
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
+          className="liquid-glass h-11 flex-1 rounded-xl px-4 text-sm outline-none placeholder:text-muted-foreground"
+        />
+        <button
+          type="submit"
+          disabled={saving || !key.trim()}
+          className="flex h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+        >
+          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+          Ligar
+        </button>
+      </form>
     </div>
   );
 }

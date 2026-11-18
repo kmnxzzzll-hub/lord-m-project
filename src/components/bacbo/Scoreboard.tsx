@@ -37,7 +37,7 @@ export function Scoreboard() {
 
   return (
     <div className="space-y-2.5">
-      <div className="liquid-glass grid grid-cols-4 rounded-[1.5rem] px-2 py-3 sm:py-3.5">
+      <div className="grid grid-cols-4 rounded-2xl border border-border bg-card px-2 py-3 sm:py-3.5">
         {items.map((i) => (
           <div key={i.label} className="flex flex-col items-center gap-0.5">
             <span className={cn("font-display text-lg font-extrabold tabular-nums sm:text-xl", i.tone)}>
@@ -88,7 +88,6 @@ export function ResultBanner() {
     const latest = fresh.filter((r) => Date.now() - r.at < RESULT_FRESH_MS).at(-1);
     if (latest) setShow(latest);
 
-    // Só celebra sequência de greens — 3 reds pausam em silêncio (sem animação)
     if (results.slice(-5).length === 5 && results.slice(-5).every((r) => r.green)) {
       setStreakBanner("greens");
     }
@@ -109,15 +108,6 @@ export function ResultBanner() {
 
   const blue = show?.side === "player";
   const sideName = blue ? "Azul (Player)" : "Vermelho (Banker)";
-  const glow = !show
-    ? ""
-    : !show.green
-      ? "shadow-[0_0_28px_-4px_var(--destructive)]"
-      : show.tie
-        ? "shadow-[0_0_28px_-4px_var(--tie)]"
-        : blue
-          ? "shadow-[0_0_28px_-4px_var(--player)]"
-          : "shadow-[0_0_28px_-4px_var(--banker)]";
 
   return (
     <>
@@ -130,28 +120,23 @@ export function ResultBanner() {
             <motion.div
               key={show.key}
               role="status"
-              initial={{ opacity: 0, y: -40, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -30, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 380, damping: 28 }}
-              className={cn(
-                "liquid-glass flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 shadow-2xl",
-                glow,
-              )}
+              initial={{ opacity: 0, y: -30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.22 }}
+              className="flex items-center gap-3 overflow-hidden rounded-2xl border border-border bg-card px-4 py-3 shadow-xl"
               style={{ width: "min(360px, 92vw)" }}
             >
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
+              <span
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-background shadow-lg",
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-background",
                   !show.green
                     ? "bg-destructive"
                     : show.tie
                       ? "bg-tie"
                       : blue
-                        ? "ball-player"
-                        : "ball-banker",
+                        ? "bg-player"
+                        : "bg-banker",
                 )}
               >
                 {show.green ? (
@@ -159,7 +144,7 @@ export function ResultBanner() {
                 ) : (
                   <X className="h-5 w-5" strokeWidth={3} />
                 )}
-              </motion.span>
+              </span>
               <div className="min-w-0 leading-tight">
                 <p
                   className={cn(
@@ -188,7 +173,7 @@ export function ResultBanner() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="liquid-glass flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold shadow-lg"
+              className="flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold shadow-lg"
             >
               <PartyPopper className="h-5 w-5 text-success" />
               <span>Surra no branco, dinheiro no bolso</span>

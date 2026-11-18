@@ -11,24 +11,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Design system definition.
- *
- * The design lives in this file: oklch color tokens on the shadcn variables
- * (--background, --foreground, --primary, --secondary, --muted, --accent, ...) plus
- * new tokens as needed, font tokens, and custom styles and animations.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -129,7 +111,6 @@
   --glass-border: oklch(1 0 0 / 11%);
 }
 
-
 @layer base {
   * {
     border-color: var(--color-border);
@@ -150,14 +131,10 @@
   }
 }
 
-/* Optimized glass — lighter blur for better mobile performance */
+/* Simple solid card style (no blur) */
 @utility glass {
-  background: linear-gradient(160deg, oklch(1 0 0 / 6%), oklch(1 0 0 / 2%));
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(10px);
-  box-shadow:
-    inset 0 1px 0 oklch(1 0 0 / 6%),
-    0 12px 28px -16px oklch(0 0 0 / 55%);
+  background: var(--card);
+  border: 1px solid var(--border);
 }
 
 @utility ball-player {
@@ -191,12 +168,8 @@
   color: #e3e3e3;
 }
 
-/* Lighter liquid-glass variant */
+/* Alias kept for compatibility — same as solid card */
 @utility liquid-glass {
-  background: linear-gradient(150deg, oklch(1 0 0 / 12%), oklch(1 0 0 / 3%) 45%, oklch(1 0 0 / 7%));
-  border: 1px solid oklch(1 0 0 / 18%) !important;
-  backdrop-filter: blur(12px);
-  box-shadow:
-    inset 0 1px 0 oklch(1 0 0 / 18%),
-    0 16px 36px -18px oklch(0 0 0 / 60%) !important;
+  background: var(--card);
+  border: 1px solid var(--border);
 }

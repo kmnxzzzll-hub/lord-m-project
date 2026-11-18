@@ -53,7 +53,7 @@ function RobotsPage() {
         <header className="pt-1 sm:pt-2">
           <Logo />
           <div className="mt-2.5 flex items-center justify-center gap-3 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/60 px-3 py-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1">
               <span
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
@@ -77,16 +77,9 @@ function RobotsPage() {
               "relative flex h-12 w-full items-center justify-center gap-2.5 overflow-hidden rounded-full font-display text-[15px] font-bold sm:h-14 sm:text-base tracking-wide transition-colors disabled:opacity-60",
               robot.running
                 ? "border border-border bg-secondary text-foreground"
-                : "bg-gradient-to-r from-success/90 to-success text-background shadow-[0_18px_40px_-18px_var(--success)]",
+                : "bg-gradient-to-r from-success/90 to-success text-background",
             )}
           >
-            {!robot.running && (
-              <motion.span
-                className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-foreground/30 to-transparent"
-                animate={{ x: ["-120%", "320%"] }}
-                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-              />
-            )}
             <Power className="relative h-5 w-5" />
             <span className="relative">{robot.running ? "Desligar Robô" : "Ligar Robô"}</span>
           </motion.button>
@@ -175,8 +168,8 @@ function Panel({ children }: { children: ReactNode }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.22 }}
-      className="glass flex flex-col items-center rounded-[1.75rem] px-5 py-6 text-center sm:px-6 sm:py-8"
+      transition={{ duration: 0.2 }}
+      className="flex flex-col items-center rounded-2xl border border-border bg-card px-5 py-6 text-center sm:px-6 sm:py-8"
     >
       {children}
     </motion.div>
@@ -188,7 +181,7 @@ const sideName = (side: "player" | "banker") =>
 
 function Analyzing() {
   const { phaseStart, phaseEnd, reason, rounds, waiting, signal } = useRobot();
-  const now = useNow(250); // was 100ms — reduced for performance
+  const now = useNow(250);
   const total = Math.max(1, phaseEnd - phaseStart);
   const elapsed = Math.min(total, Math.max(0, now - phaseStart));
 
@@ -211,7 +204,6 @@ function Analyzing() {
 
   return (
     <Panel>
-      {/* Lightweight robot icon instead of 3D die */}
       <RobotIcon size={72} className="sm:size-[88px]" />
       <h2 className="mt-3 font-display text-base font-extrabold tracking-[0.12em] sm:mt-4 sm:text-xl sm:tracking-[0.14em]">
         <span className="text-success">SISTEMA ONLINE</span>{" "}

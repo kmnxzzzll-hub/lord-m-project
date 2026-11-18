@@ -150,13 +150,14 @@
   }
 }
 
+/* Optimized glass — lighter blur for better mobile performance */
 @utility glass {
-  background: linear-gradient(160deg, oklch(1 0 0 / 7%), oklch(1 0 0 / 2%));
+  background: linear-gradient(160deg, oklch(1 0 0 / 6%), oklch(1 0 0 / 2%));
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(10px);
   box-shadow:
-    inset 0 1px 0 oklch(1 0 0 / 8%),
-    0 20px 40px -20px oklch(0 0 0 / 70%);
+    inset 0 1px 0 oklch(1 0 0 / 6%),
+    0 12px 28px -16px oklch(0 0 0 / 55%);
 }
 
 @utility ball-player {
@@ -190,12 +191,12 @@
   color: #e3e3e3;
 }
 
+/* Lighter liquid-glass variant */
 @utility liquid-glass {
-  background: linear-gradient(150deg, oklch(1 0 0 / 16%), oklch(1 0 0 / 4%) 45%, oklch(1 0 0 / 9%));
-  border: 1px solid oklch(1 0 0 / 22%) !important;
-  backdrop-filter: blur(28px) saturate(180%);
+  background: linear-gradient(150deg, oklch(1 0 0 / 12%), oklch(1 0 0 / 3%) 45%, oklch(1 0 0 / 7%));
+  border: 1px solid oklch(1 0 0 / 18%) !important;
+  backdrop-filter: blur(12px);
   box-shadow:
-    inset 0 1px 0 oklch(1 0 0 / 28%),
-    inset 0 -1px 0 oklch(1 0 0 / 6%),
-    0 24px 50px -20px oklch(0 0 0 / 75%) !important;
+    inset 0 1px 0 oklch(1 0 0 / 18%),
+    0 16px 36px -18px oklch(0 0 0 / 60%) !important;
 }

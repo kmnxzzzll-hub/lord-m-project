@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Moon, Power, WifiOff, Wrench } from "lucide-react";
 import { Logo } from "@/components/bacbo/Logo";
 import { LiquidBoard } from "@/components/bacbo/LiquidBoard";
-import { Cube3D } from "@/components/bacbo/Cube3D";
+import { RobotIcon } from "@/components/bacbo/RobotIcon";
 import { LiveTableCard } from "@/components/bacbo/LiveTable";
 import { SignalOrb } from "@/components/bacbo/SignalOrb";
 import { Scoreboard, ResultBanner } from "@/components/bacbo/Scoreboard";
@@ -13,7 +13,6 @@ import { useRobot } from "@/lib/robot-context";
 import { MIN_HISTORY } from "@/lib/robot-schedule";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/_authenticated/_approved/robos")({
   head: () => ({
@@ -173,10 +172,10 @@ function RobotsPage() {
 function Panel({ children }: { children: ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.3 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.22 }}
       className="glass flex flex-col items-center rounded-[1.75rem] px-5 py-6 text-center sm:px-6 sm:py-8"
     >
       {children}
@@ -189,10 +188,9 @@ const sideName = (side: "player" | "banker") =>
 
 function Analyzing() {
   const { phaseStart, phaseEnd, reason, rounds, waiting, signal } = useRobot();
-  const now = useNow(100);
+  const now = useNow(250); // was 100ms — reduced for performance
   const total = Math.max(1, phaseEnd - phaseStart);
   const elapsed = Math.min(total, Math.max(0, now - phaseStart));
-  const isMobile = useIsMobile();
 
   const text =
     reason === "collecting"
@@ -208,13 +206,14 @@ function Analyzing() {
               : reason === "weak_pattern"
                 ? "O padrão formado está a falhar nesta mesa. Aguardando um padrão mais forte."
                 : reason === "next_round"
-            ? "Aguardando a próxima rodada da mesa."
-            : "Lendo a mesa e identificando padrões claros.";
+                  ? "Aguardando a próxima rodada da mesa."
+                  : "Lendo a mesa e identificando padrões claros.";
 
   return (
     <Panel>
-      <Cube3D size={isMobile ? 76 : 100} />
-      <h2 className="mt-2 font-display text-base font-extrabold tracking-[0.12em] sm:mt-3 sm:text-xl sm:tracking-[0.14em]">
+      {/* Lightweight robot icon instead of 3D die */}
+      <RobotIcon size={72} className="sm:size-[88px]" />
+      <h2 className="mt-3 font-display text-base font-extrabold tracking-[0.12em] sm:mt-4 sm:text-xl sm:tracking-[0.14em]">
         <span className="text-success">SISTEMA ONLINE</span>{" "}
         <span className="text-foreground">
           {reason === "result" ? "AGUARDANDO" : "ANALISANDO"}
@@ -226,11 +225,11 @@ function Analyzing() {
           <motion.div
             className="h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-success to-transparent"
             animate={{ x: ["-100%", "300%"] }}
-            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
           />
         ) : (
           <div
-            className="relative h-full rounded-full bg-gradient-to-r from-success/60 to-success transition-[width] duration-100 ease-linear"
+            className="relative h-full rounded-full bg-gradient-to-r from-success/60 to-success transition-[width] duration-150 ease-linear"
             style={{ width: `${(elapsed / total) * 100}%` }}
           />
         )}

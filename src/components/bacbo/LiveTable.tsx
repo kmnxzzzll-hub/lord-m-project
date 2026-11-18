@@ -16,7 +16,7 @@ const PIPS: Record<number, number[]> = {
 export function DieFace({
   value,
   tone,
-  size = 22,
+  size = 18,
 }: {
   value: number;
   tone: "player" | "banker";
@@ -28,7 +28,7 @@ export function DieFace({
       aria-label={`${value}`}
       className={cn(
         "grid grid-cols-3 grid-rows-3 place-items-center rounded-[26%] bg-card/90 p-[14%] ring-1",
-        tone === "player" ? "ring-player-glow/45" : "ring-banker-glow/45",
+        tone === "player" ? "ring-player-glow/40" : "ring-banker-glow/40",
       )}
       style={{ width: size, height: size }}
     >
@@ -54,7 +54,7 @@ function SideDice({ round, side }: { round: LiveRound | null; side: "player" | "
     <div className={cn("flex flex-col gap-0.5", isPlayer ? "items-start" : "items-end")}>
       <span
         className={cn(
-          "text-[10px] font-semibold uppercase tracking-[0.18em]",
+          "text-[9px] font-semibold uppercase tracking-[0.16em]",
           isPlayer ? "text-player-glow" : "text-banker-glow",
         )}
       >
@@ -65,7 +65,7 @@ function SideDice({ round, side }: { round: LiveRound | null; side: "player" | "
         <DieFace value={dice[1] ?? 0} tone={side} />
         <span
           className={cn(
-            "font-display text-lg font-extrabold tabular-nums sm:text-xl",
+            "font-display text-base font-extrabold tabular-nums sm:text-lg",
             won ? "text-foreground" : "text-muted-foreground",
           )}
         >
@@ -76,15 +76,14 @@ function SideDice({ round, side }: { round: LiveRound | null; side: "player" | "
   );
 }
 
-/** Último resultado ao vivo da mesa. */
 export function LiveTableCard({ rounds }: { rounds: LiveRound[] }) {
   const last = rounds[rounds.length - 1] ?? null;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-3 sm:p-3.5">
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-[0.16em]">
-          <Radio className={cn("h-3 w-3", last ? "text-success" : "text-muted-foreground")} />
+    <div className="rounded-2xl border border-border bg-card p-2.5 sm:p-3">
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-[0.14em]">
+          <Radio className={cn("h-2.5 w-2.5", last ? "text-success" : "text-muted-foreground")} />
           Mesa ao vivo
         </span>
         <span
@@ -105,16 +104,16 @@ export function LiveTableCard({ rounds }: { rounds: LiveRound[] }) {
 
       <motion.div
         key={last?.id ?? "none"}
-        initial={{ opacity: 0, y: 4 }}
+        initial={{ opacity: 0, y: 3 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-2.5 flex items-end justify-between gap-2"
+        className="mt-2 flex items-end justify-between gap-2"
       >
         <SideDice round={last} side="player" />
         {last ? (
           <Ball
             kind={outcomeKind(last.outcome)}
             label={outcomeLabel(last.outcome)}
-            size={26}
+            size={22}
             className="mb-0.5"
           />
         ) : (
@@ -123,7 +122,7 @@ export function LiveTableCard({ rounds }: { rounds: LiveRound[] }) {
         <SideDice round={last} side="banker" />
       </motion.div>
       {last?.outcome === "T" && last.multiplier && (
-        <p className="mt-2 text-center text-[11px] font-semibold text-tie-glow">
+        <p className="mt-1.5 text-center text-[10px] font-semibold text-tie-glow">
           Tie pagou {last.multiplier}x
         </p>
       )}

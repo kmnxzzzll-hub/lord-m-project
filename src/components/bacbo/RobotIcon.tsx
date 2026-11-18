@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 
-/** Lightweight SVG robot icon — no WebGL, no continuous heavy animation. */
+/** Lightweight SVG robot icon */
 export function RobotIcon({
-  size = 48,
+  size = 36,
   className,
 }: {
   size?: number;
@@ -17,7 +17,7 @@ export function RobotIcon({
         viewBox="0 0 64 64"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="h-full w-full text-foreground/80"
+        className="h-full w-full text-foreground/75"
         aria-hidden
       >
         <line

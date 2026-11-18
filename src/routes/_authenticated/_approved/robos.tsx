@@ -47,13 +47,13 @@ function RobotsPage() {
   const dist = phase === "signal" ? distribution(robot.history, robot.signal) : null;
 
   return (
-    <div className="space-y-3.5 sm:space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8 lg:gap-y-4 lg:space-y-0">
+    <div className="space-y-3 sm:space-y-3.5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8 lg:gap-y-3.5 lg:space-y-0">
       <ResultBanner />
-      <div className="space-y-3.5 sm:space-y-4">
-        <header className="pt-1">
+      <div className="space-y-3 sm:space-y-3.5">
+        <header className="pt-0.5">
           <Logo />
-          <div className="mt-2 flex items-center justify-center gap-3 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1">
+          <div className="mt-1.5 flex items-center justify-center gap-2.5 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-0.5">
               <span
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
@@ -74,13 +74,13 @@ function RobotsPage() {
             whileTap={{ scale: 0.97 }}
             disabled={robot.toggling}
             className={cn(
-              "relative flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-full font-display text-sm font-bold sm:h-12 sm:text-[15px] tracking-wide transition-colors disabled:opacity-60",
+              "relative flex h-10 w-full items-center justify-center gap-2 overflow-hidden rounded-full font-display text-sm font-bold tracking-wide transition-colors disabled:opacity-60 sm:h-11",
               robot.running
                 ? "border border-border bg-secondary text-foreground"
                 : "bg-gradient-to-r from-success/90 to-success text-background",
             )}
           >
-            <Power className="relative h-4 w-4" />
+            <Power className="relative h-3.5 w-3.5" />
             <span className="relative">{robot.running ? "Desligar Robô" : "Ligar Robô"}</span>
           </motion.button>
         )}
@@ -93,28 +93,28 @@ function RobotsPage() {
         <LiveTableCard rounds={robot.rounds} />
       </div>
 
-      <div className="lg:pt-1">
+      <div>
         <AnimatePresence mode="wait">
           {robot.maintenance ? (
             <Panel key="maint">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-tie/30 bg-tie/10 text-tie">
-                <Wrench className="h-4.5 w-4.5 h-[18px] w-[18px]" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-tie/30 bg-tie/10 text-tie">
+                <Wrench className="h-3.5 w-3.5" />
               </div>
-              <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+              <span className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 Modo manutenção
               </span>
-              <h2 className="mt-1 font-display text-lg font-extrabold sm:text-xl">ROBÔ PAUSADO</h2>
-              <p className="mt-1.5 text-xs text-muted-foreground sm:text-sm">
+              <h2 className="mt-0.5 font-display text-base font-extrabold sm:text-lg">ROBÔ PAUSADO</h2>
+              <p className="mt-1 text-[11px] text-muted-foreground sm:text-xs">
                 O administrador está calibrando o sistema. Volte em instantes.
               </p>
             </Panel>
           ) : phase === "off" ? (
             <Panel key="off">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/60 text-muted-foreground">
-                <Moon className="h-[18px] w-[18px]" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background/60 text-muted-foreground">
+                <Moon className="h-3.5 w-3.5" />
               </div>
-              <h2 className="mt-3 font-display text-lg font-extrabold sm:text-xl">STANDBY</h2>
-              <p className="mt-1.5 text-xs text-muted-foreground sm:text-sm">
+              <h2 className="mt-2 font-display text-base font-extrabold sm:text-lg">STANDBY</h2>
+              <p className="mt-1 text-[11px] text-muted-foreground sm:text-xs">
                 {isAdmin
                   ? "Toque em Ligar Robô para iniciar os sinais para todos."
                   : "Aguarde o administrador iniciar o robô."}
@@ -122,16 +122,16 @@ function RobotsPage() {
             </Panel>
           ) : robot.reason === "no_connection" ? (
             <Panel key="offline">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive">
-                <WifiOff className="h-[18px] w-[18px]" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive">
+                <WifiOff className="h-3.5 w-3.5" />
               </div>
-              <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+              <span className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 Robô ligado
               </span>
-              <h2 className="mt-1 font-display text-lg font-extrabold sm:text-xl">
+              <h2 className="mt-0.5 font-display text-base font-extrabold sm:text-lg">
                 SEM CONEXÃO COM A MESA
               </h2>
-              <p className="mt-1.5 text-xs text-muted-foreground sm:text-sm">
+              <p className="mt-1 text-[11px] text-muted-foreground sm:text-xs">
                 A mesa ao vivo não está enviando rodadas, então nenhum sinal será enviado. Não
                 recomendamos operar agora.
               </p>
@@ -152,7 +152,7 @@ function RobotsPage() {
         </AnimatePresence>
       </div>
 
-      <p className="px-3 text-center lg:col-span-2 text-[11px] leading-relaxed text-muted-foreground/70">
+      <p className="px-3 text-center lg:col-span-2 text-[10px] leading-relaxed text-muted-foreground/70">
         As rodadas analisadas vêm da mesa Bac Bo Live ao vivo. Os sinais são leituras de padrões e
         não garantem ganhos. Jogue com responsabilidade · +18.
       </p>
@@ -163,11 +163,11 @@ function RobotsPage() {
 function Panel({ children }: { children: ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      transition={{ duration: 0.18 }}
-      className="flex flex-col items-center rounded-2xl border border-border bg-card px-4 py-5 text-center sm:px-5 sm:py-6"
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.16 }}
+      className="flex flex-col items-center rounded-2xl border border-border bg-card px-4 py-4 text-center sm:px-5 sm:py-5"
     >
       {children}
     </motion.div>
@@ -202,20 +202,20 @@ function Analyzing() {
 
   return (
     <Panel>
-      <RobotIcon size={44} className="sm:size-[52px]" />
-      <h2 className="mt-2.5 font-display text-sm font-extrabold tracking-[0.1em] sm:text-base sm:tracking-[0.12em]">
+      <RobotIcon size={32} className="sm:size-9" />
+      <h2 className="mt-2 font-display text-xs font-extrabold tracking-[0.1em] sm:text-sm">
         <span className="text-success">SISTEMA ONLINE</span>{" "}
         <span className="text-foreground">
           {reason === "result" ? "AGUARDANDO" : "ANALISANDO"}
         </span>
       </h2>
-      <p className="mt-1.5 text-[11px] text-muted-foreground sm:text-xs">{text}</p>
-      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted sm:mt-4">
+      <p className="mt-1 text-[11px] text-muted-foreground">{text}</p>
+      <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
         {waiting ? (
           <motion.div
             className="h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-success to-transparent"
             animate={{ x: ["-100%", "300%"] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           />
         ) : (
           <div

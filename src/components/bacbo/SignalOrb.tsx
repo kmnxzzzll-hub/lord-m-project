@@ -4,71 +4,61 @@ import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 
 const WAVE =
-  "M0 12 Q 20 2 40 12 T 80 12 T 120 12 T 160 12 T 200 12 T 240 12 T 280 12 T 320 12 V 40 H 0 Z";
+  "M0 14 Q 20 6 40 14 T 80 14 T 120 14 T 160 14 T 200 14 T 240 14 T 280 14 T 320 14 V 40 H 0 Z";
 
+/** Soft, low-contrast water effect — not flashy */
 function WaterWave({ isPlayer }: { isPlayer: boolean }) {
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] overflow-hidden">
-      {/* Back wave */}
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[34%] overflow-hidden opacity-70">
       <motion.svg
         viewBox="0 0 320 40"
         preserveAspectRatio="none"
         className={cn(
           "absolute bottom-0 h-full w-[200%]",
-          isPlayer ? "fill-player/25" : "fill-banker/25",
+          isPlayer ? "fill-player/15" : "fill-banker/15",
         )}
         animate={{ x: ["-50%", "0%"] }}
-        transition={{ duration: 4.5, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
       >
         <path d={WAVE} />
       </motion.svg>
 
-      {/* Front wave */}
       <motion.svg
         viewBox="0 0 320 40"
         preserveAspectRatio="none"
         className={cn(
-          "absolute bottom-0 h-[85%] w-[200%]",
-          isPlayer ? "fill-player/40" : "fill-banker/40",
+          "absolute bottom-0 h-[80%] w-[200%]",
+          isPlayer ? "fill-player/22" : "fill-banker/22",
         )}
         animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 5.5, repeat: Infinity, ease: "linear" }}
       >
         <path d={WAVE} />
       </motion.svg>
 
-      {/* Soft liquid body */}
       <div
         className={cn(
-          "absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t",
-          isPlayer ? "from-player/35 to-transparent" : "from-banker/35 to-transparent",
+          "absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t",
+          isPlayer ? "from-player/18 to-transparent" : "from-banker/18 to-transparent",
         )}
       />
 
-      {/* Light bubbles */}
+      {/* Only 2 subtle bubbles */}
       <motion.span
         className={cn(
-          "absolute bottom-3 left-[28%] h-1.5 w-1.5 rounded-full",
-          isPlayer ? "bg-player-glow/70" : "bg-banker-glow/70",
+          "absolute bottom-2 left-[32%] h-1 w-1 rounded-full",
+          isPlayer ? "bg-player-glow/40" : "bg-banker-glow/40",
         )}
-        animate={{ y: [0, -36], opacity: [0, 0.9, 0] }}
-        transition={{ duration: 2.4, repeat: Infinity, delay: 0.2 }}
+        animate={{ y: [0, -22], opacity: [0, 0.55, 0] }}
+        transition={{ duration: 3.2, repeat: Infinity, delay: 0.4 }}
       />
       <motion.span
         className={cn(
-          "absolute bottom-2 left-[62%] h-1 w-1 rounded-full",
-          isPlayer ? "bg-player-glow/60" : "bg-banker-glow/60",
+          "absolute bottom-3 left-[58%] h-1 w-1 rounded-full",
+          isPlayer ? "bg-player-glow/35" : "bg-banker-glow/35",
         )}
-        animate={{ y: [0, -44], opacity: [0, 0.8, 0] }}
-        transition={{ duration: 2.8, repeat: Infinity, delay: 1.1 }}
-      />
-      <motion.span
-        className={cn(
-          "absolute bottom-4 left-[46%] h-1.5 w-1.5 rounded-full",
-          isPlayer ? "bg-player-glow/50" : "bg-banker-glow/50",
-        )}
-        animate={{ y: [0, -30], opacity: [0, 0.7, 0] }}
-        transition={{ duration: 2.2, repeat: Infinity, delay: 0.7 }}
+        animate={{ y: [0, -26], opacity: [0, 0.45, 0] }}
+        transition={{ duration: 3.6, repeat: Infinity, delay: 1.6 }}
       />
     </div>
   );
@@ -92,28 +82,27 @@ export function SignalOrb({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      transition={{ duration: 0.2 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.18 }}
       className={cn(
-        "relative flex flex-col items-center overflow-hidden rounded-2xl border bg-card px-4 py-5 sm:px-5 sm:py-6",
-        isPlayer ? "border-player/50" : "border-banker/50",
+        "relative flex flex-col items-center overflow-hidden rounded-2xl border bg-card px-4 py-4 sm:px-5 sm:py-5",
+        isPlayer ? "border-player/40" : "border-banker/40",
       )}
     >
-      {/* Wave / water effect only when signal is confirmed */}
       <WaterWave isPlayer={isPlayer} />
 
       <div className="relative z-10 flex flex-col items-center">
         <div
           className={cn(
-            "flex h-16 w-16 items-center justify-center rounded-full sm:h-20 sm:w-20",
-            isPlayer ? "bg-player/15" : "bg-banker/15",
+            "flex h-12 w-12 items-center justify-center rounded-full sm:h-14 sm:w-14",
+            isPlayer ? "bg-player/12" : "bg-banker/12",
           )}
         >
           <div
             className={cn(
-              "h-11 w-11 rounded-full sm:h-14 sm:w-14",
+              "h-8 w-8 rounded-full sm:h-9 sm:w-9",
               isPlayer ? "ball-player" : "ball-banker",
             )}
           />
@@ -121,18 +110,18 @@ export function SignalOrb({
 
         <h2
           className={cn(
-            "mt-3 font-display text-2xl font-extrabold tracking-[0.12em] sm:mt-4 sm:text-3xl",
+            "mt-2.5 font-display text-xl font-extrabold tracking-[0.12em] sm:text-2xl",
             isPlayer ? "text-player-glow" : "text-banker-glow",
           )}
         >
           {isPlayer ? "PLAYER" : "BANKER"}
         </h2>
 
-        <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           Aposte agora · <span className="tabular-nums text-foreground">{secondsLeft}s</span>
         </p>
 
-        <div className="mt-2 h-1 w-28 overflow-hidden rounded-full bg-muted sm:w-32">
+        <div className="mt-2 h-1 w-24 overflow-hidden rounded-full bg-muted sm:w-28">
           <div
             className={cn(
               "h-full rounded-full transition-[width] duration-300 ease-linear",

@@ -16,8 +16,8 @@ function SideCard({
   return (
     <div
       className={cn(
-        "relative flex h-full flex-col justify-between rounded-2xl border bg-card px-4 py-4 sm:px-5 sm:py-5",
-        isPlayer ? "rounded-l-[1.5rem] rounded-r-xl" : "rounded-r-[1.5rem] rounded-l-xl",
+        "relative flex h-full flex-col justify-between rounded-2xl border bg-card px-3 py-3 sm:px-4 sm:py-4",
+        isPlayer ? "rounded-l-[1.25rem] rounded-r-xl" : "rounded-r-[1.25rem] rounded-l-xl",
         highlight
           ? isPlayer
             ? "border-player/60 ring-1 ring-player/40"
@@ -27,23 +27,22 @@ function SideCard({
     >
       <span
         className={cn(
-          "text-[10px] font-semibold uppercase tracking-[0.2em] sm:text-[11px]",
+          "text-[10px] font-semibold uppercase tracking-[0.18em]",
           isPlayer ? "text-player-glow" : "text-banker-glow",
         )}
       >
         {label}
       </span>
 
-      <div className={cn("mt-3", isPlayer ? "text-left" : "text-right")}>
-        <span className="font-display text-3xl font-extrabold tracking-tight tabular-nums sm:text-4xl">
+      <div className={cn("mt-2", isPlayer ? "text-left" : "text-right")}>
+        <span className="font-display text-2xl font-extrabold tracking-tight tabular-nums sm:text-3xl">
           {value === null ? "--" : `${value}%`}
         </span>
       </div>
 
-      {/* Small accent bar */}
       <div
         className={cn(
-          "mt-3 h-1 w-10 rounded-full sm:w-12",
+          "mt-2 h-1 w-8 rounded-full sm:w-10",
           isPlayer ? "bg-player" : "bg-banker",
           !isPlayer && "ml-auto",
         )}
@@ -62,7 +61,7 @@ export function LiquidBoard({
   const active = dist !== null;
 
   return (
-    <div className="relative h-36 sm:h-44 lg:h-52">
+    <div className="relative h-28 sm:h-36 lg:h-40">
       <div className="absolute inset-y-0 left-0 w-[47%]">
         <SideCard
           tone="player"
@@ -81,12 +80,11 @@ export function LiquidBoard({
         />
       </div>
 
-      {/* Center Tie card */}
-      <div className="absolute left-1/2 top-1/2 z-10 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-2xl border border-border bg-card shadow-lg sm:h-28 sm:w-28 lg:h-32 lg:w-32">
-        <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-tie-glow sm:text-[10px]">
+      <div className="absolute left-1/2 top-1/2 z-10 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-2xl border border-border bg-card shadow-md sm:h-24 sm:w-24">
+        <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-tie-glow">
           Tie
         </span>
-        <span className="mt-1 font-display text-2xl font-extrabold tabular-nums sm:text-3xl">
+        <span className="mt-0.5 font-display text-xl font-extrabold tabular-nums sm:text-2xl">
           {active ? `${dist!.tie}%` : "--"}
         </span>
       </div>

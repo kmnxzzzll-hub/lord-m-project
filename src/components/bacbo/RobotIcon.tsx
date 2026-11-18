@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 /** Lightweight SVG robot icon — no WebGL, no continuous heavy animation. */
 export function RobotIcon({
-  size = 80,
+  size = 48,
   className,
 }: {
   size?: number;
@@ -20,7 +20,6 @@ export function RobotIcon({
         className="h-full w-full text-foreground/80"
         aria-hidden
       >
-        {/* Antenna */}
         <line
           x1="32"
           y1="6"
@@ -31,8 +30,6 @@ export function RobotIcon({
           strokeLinecap="round"
         />
         <circle cx="32" cy="5" r="3.2" stroke="currentColor" strokeWidth="2.2" />
-
-        {/* Head / body */}
         <rect
           x="14"
           y="14"
@@ -42,8 +39,6 @@ export function RobotIcon({
           stroke="currentColor"
           strokeWidth="2.4"
         />
-
-        {/* Eyes */}
         <line
           x1="24"
           y1="28"

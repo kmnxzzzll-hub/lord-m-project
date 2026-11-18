@@ -47,13 +47,13 @@ function RobotsPage() {
   const dist = phase === "signal" ? distribution(robot.history, robot.signal) : null;
 
   return (
-    <div className="space-y-4 sm:space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8 lg:gap-y-5 lg:space-y-0">
+    <div className="space-y-3.5 sm:space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8 lg:gap-y-4 lg:space-y-0">
       <ResultBanner />
-      <div className="space-y-4 sm:space-y-5">
-        <header className="pt-1 sm:pt-2">
+      <div className="space-y-3.5 sm:space-y-4">
+        <header className="pt-1">
           <Logo />
-          <div className="mt-2.5 flex items-center justify-center gap-3 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1">
+          <div className="mt-2 flex items-center justify-center gap-3 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1">
               <span
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
@@ -74,13 +74,13 @@ function RobotsPage() {
             whileTap={{ scale: 0.97 }}
             disabled={robot.toggling}
             className={cn(
-              "relative flex h-12 w-full items-center justify-center gap-2.5 overflow-hidden rounded-full font-display text-[15px] font-bold sm:h-14 sm:text-base tracking-wide transition-colors disabled:opacity-60",
+              "relative flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-full font-display text-sm font-bold sm:h-12 sm:text-[15px] tracking-wide transition-colors disabled:opacity-60",
               robot.running
                 ? "border border-border bg-secondary text-foreground"
                 : "bg-gradient-to-r from-success/90 to-success text-background",
             )}
           >
-            <Power className="relative h-5 w-5" />
+            <Power className="relative h-4 w-4" />
             <span className="relative">{robot.running ? "Desligar Robô" : "Ligar Robô"}</span>
           </motion.button>
         )}
@@ -93,30 +93,28 @@ function RobotsPage() {
         <LiveTableCard rounds={robot.rounds} />
       </div>
 
-      <div className="lg:pt-2">
+      <div className="lg:pt-1">
         <AnimatePresence mode="wait">
           {robot.maintenance ? (
             <Panel key="maint">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-tie/30 bg-tie/10 text-tie">
-                <Wrench className="h-7 w-7" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-tie/30 bg-tie/10 text-tie">
+                <Wrench className="h-4.5 w-4.5 h-[18px] w-[18px]" />
               </div>
-              <span className="mt-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+              <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                 Modo manutenção
               </span>
-              <h2 className="mt-1 font-display text-2xl font-extrabold">ROBÔ PAUSADO</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <h2 className="mt-1 font-display text-lg font-extrabold sm:text-xl">ROBÔ PAUSADO</h2>
+              <p className="mt-1.5 text-xs text-muted-foreground sm:text-sm">
                 O administrador está calibrando o sistema. Volte em instantes.
               </p>
             </Panel>
           ) : phase === "off" ? (
             <Panel key="off">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-background/60 sm:h-16 sm:w-16 text-muted-foreground">
-                <Moon className="h-7 w-7" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/60 text-muted-foreground">
+                <Moon className="h-[18px] w-[18px]" />
               </div>
-              <h2 className="mt-3 font-display text-xl font-extrabold sm:mt-4 sm:text-2xl">
-                STANDBY
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <h2 className="mt-3 font-display text-lg font-extrabold sm:text-xl">STANDBY</h2>
+              <p className="mt-1.5 text-xs text-muted-foreground sm:text-sm">
                 {isAdmin
                   ? "Toque em Ligar Robô para iniciar os sinais para todos."
                   : "Aguarde o administrador iniciar o robô."}
@@ -124,16 +122,16 @@ function RobotsPage() {
             </Panel>
           ) : robot.reason === "no_connection" ? (
             <Panel key="offline">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive sm:h-16 sm:w-16">
-                <WifiOff className="h-7 w-7" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive">
+                <WifiOff className="h-[18px] w-[18px]" />
               </div>
-              <span className="mt-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-muted-foreground sm:mt-4">
+              <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                 Robô ligado
               </span>
-              <h2 className="mt-1 font-display text-xl font-extrabold sm:text-2xl">
+              <h2 className="mt-1 font-display text-lg font-extrabold sm:text-xl">
                 SEM CONEXÃO COM A MESA
               </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-1.5 text-xs text-muted-foreground sm:text-sm">
                 A mesa ao vivo não está enviando rodadas, então nenhum sinal será enviado. Não
                 recomendamos operar agora.
               </p>
@@ -165,11 +163,11 @@ function RobotsPage() {
 function Panel({ children }: { children: ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.2 }}
-      className="flex flex-col items-center rounded-2xl border border-border bg-card px-5 py-6 text-center sm:px-6 sm:py-8"
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.18 }}
+      className="flex flex-col items-center rounded-2xl border border-border bg-card px-4 py-5 text-center sm:px-5 sm:py-6"
     >
       {children}
     </motion.div>
@@ -204,15 +202,15 @@ function Analyzing() {
 
   return (
     <Panel>
-      <RobotIcon size={72} className="sm:size-[88px]" />
-      <h2 className="mt-3 font-display text-base font-extrabold tracking-[0.12em] sm:mt-4 sm:text-xl sm:tracking-[0.14em]">
+      <RobotIcon size={44} className="sm:size-[52px]" />
+      <h2 className="mt-2.5 font-display text-sm font-extrabold tracking-[0.1em] sm:text-base sm:tracking-[0.12em]">
         <span className="text-success">SISTEMA ONLINE</span>{" "}
         <span className="text-foreground">
           {reason === "result" ? "AGUARDANDO" : "ANALISANDO"}
         </span>
       </h2>
-      <p className="mt-1.5 text-xs text-muted-foreground">{text}</p>
-      <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted sm:mt-6">
+      <p className="mt-1.5 text-[11px] text-muted-foreground sm:text-xs">{text}</p>
+      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted sm:mt-4">
         {waiting ? (
           <motion.div
             className="h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-success to-transparent"

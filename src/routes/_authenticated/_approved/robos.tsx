@@ -10,7 +10,6 @@ import { SignalOrb, WaterWave } from "@/components/bacbo/SignalOrb";
 import { Scoreboard, ResultBanner } from "@/components/bacbo/Scoreboard";
 import { summarizeRoundFrequencies } from "@/lib/round-statistics";
 import { useRobot } from "@/lib/robot-context";
-import { MIN_HISTORY } from "@/lib/robot-schedule";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 
@@ -186,7 +185,7 @@ function Analyzing() {
 
   const text =
     reason === "collecting"
-      ? `Coletando rodadas da mesa (${Math.min(rounds.length, MIN_HISTORY)}/${MIN_HISTORY}).`
+      ? "Coletando rodadas da mesa."
       : reason === "result" && signal
         ? `Apostas fechadas. Aguardando o resultado da entrada no ${sideName(signal.side)}.`
         : reason === "no_pattern"

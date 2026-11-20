@@ -20,21 +20,6 @@ export function Scoreboard() {
     { label: "Sequência", value: s.best, tone: "text-tie" },
   ];
 
-  const recent = results.slice(-8);
-  const recentRate = recent.length
-    ? recent.filter((r) => r.green).length / recent.length
-    : 0.5;
-  let quality: "boa" | "normal" | "fria" = "normal";
-  if (recentRate >= 0.65) quality = "boa";
-  else if (recentRate <= 0.4 || results.slice(-3).every((r) => !r.green)) quality = "fria";
-
-  const qualityClass =
-    quality === "boa"
-      ? "bg-success/12 text-success ring-1 ring-success/25"
-      : quality === "fria"
-        ? "bg-destructive/12 text-destructive ring-1 ring-destructive/25"
-        : "bg-tie/12 text-tie ring-1 ring-tie/20";
-
   return (
     <div className="space-y-2.5">
       <div className="grid grid-cols-4 rounded-2xl border border-border bg-card px-2 py-3 sm:py-3.5">
@@ -48,22 +33,6 @@ export function Scoreboard() {
             </span>
           </div>
         ))}
-      </div>
-      <div className="flex justify-center">
-        <span
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold",
-            qualityClass,
-          )}
-        >
-          <span
-            className={cn(
-              "h-1.5 w-1.5 rounded-full",
-              quality === "boa" ? "bg-success" : quality === "fria" ? "bg-destructive" : "bg-tie",
-            )}
-          />
-          Mesa {quality === "boa" ? "boa" : quality === "fria" ? "fria" : "normal"}
-        </span>
       </div>
     </div>
   );

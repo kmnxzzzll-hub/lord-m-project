@@ -127,7 +127,7 @@ function ProfilePage() {
           </div>
           <div className="flex-1">
             <p className="font-semibold">Painel do Administrador</p>
-            <p className="text-xs text-muted-foreground">Cadastros, robô e senha</p>
+            <p className="text-xs text-muted-foreground">Cadastros e robô</p>
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </Link>

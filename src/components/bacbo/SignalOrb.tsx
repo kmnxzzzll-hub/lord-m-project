@@ -3,60 +3,32 @@ import type { Side, Signal } from "@/lib/bacbo-engine";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 
-/** Slightly more geometric / cube-like wave with higher amplitude */
-const WAVE =
-  "M0 18 C 12 6, 28 6, 40 18 C 52 30, 68 30, 80 18 C 92 6, 108 6, 120 18 C 132 30, 148 30, 160 18 C 172 6, 188 6, 200 18 C 212 30, 228 30, 240 18 C 252 6, 268 6, 280 18 C 292 30, 308 30, 320 18 V 40 H 0 Z";
-
-/** Single decorative water layer: low without a signal, raised when a signal is shown. */
+/** Decorative low water layer used on standby/analyzing panels (no raise). */
 export function WaterWave({
   side,
-  raised = false,
 }: {
   side?: Side;
   raised?: boolean;
 }) {
   const fill = side === "player"
-    ? "fill-player/22"
+    ? "fill-player/12"
     : side === "banker"
-      ? "fill-banker/22"
-      : "fill-muted-foreground/12";
+      ? "fill-banker/12"
+      : "fill-muted-foreground/10";
   const gradient = side === "player"
-    ? "from-player/22"
+    ? "from-player/10"
     : side === "banker"
-      ? "from-banker/22"
-      : "from-muted-foreground/10";
+      ? "from-banker/10"
+      : "from-muted-foreground/8";
 
   return (
-    <motion.div
+    <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden"
-      initial={{ height: "16%", opacity: 0.4 }}
-      animate={{
-        height: raised ? "78%" : "16%",
-        opacity: raised ? 0.88 : 0.4,
-      }}
-      transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+      className="pointer-events-none absolute inset-x-0 bottom-0 h-[14%] overflow-hidden opacity-40"
     >
-      <motion.svg
-        viewBox="0 0 320 40"
-        preserveAspectRatio="none"
-        className={cn("absolute bottom-0 h-full w-[220%]", fill)}
-        animate={{ x: ["-50%", "0%"] }}
-        transition={{ duration: 6.5, repeat: Infinity, ease: "linear" }}
-      >
-        <path d={WAVE} />
-      </motion.svg>
-      <motion.svg
-        viewBox="0 0 320 40"
-        preserveAspectRatio="none"
-        className={cn("absolute bottom-0 h-[85%] w-[220%] opacity-70", fill)}
-        animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-      >
-        <path d={WAVE} />
-      </motion.svg>
       <div className={cn("absolute inset-0 bg-gradient-to-t to-transparent", gradient)} />
-    </motion.div>
+      <div className={cn("absolute inset-x-0 bottom-0 h-full", fill)} />
+    </div>
   );
 }
 
@@ -71,7 +43,6 @@ export function SignalOrb({
   phaseStart: number;
   phaseEnd: number;
 }) {
-  // Display only (seconds + bar); the signal window itself is driven by the robot schedule.
   const now = useNow(1000);
   const isPlayer = side === "player";
   const left = Math.max(0, Math.min(1, (phaseEnd - now) / (phaseEnd - phaseStart)));
@@ -88,8 +59,6 @@ export function SignalOrb({
         isPlayer ? "border-player/40" : "border-banker/40",
       )}
     >
-      <WaterWave side={side} raised />
-
       <div className="relative z-10 flex flex-col items-center">
         <div
           className={cn(

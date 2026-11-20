@@ -1,16 +1,19 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+/** Slightly more geometric / cube-like wave with higher amplitude */
 const WAVE =
-  "M0 14 Q 20 6 40 14 T 80 14 T 120 14 T 160 14 T 200 14 T 240 14 T 280 14 T 320 14 V 40 H 0 Z";
+  "M0 18 C 12 6, 28 6, 40 18 C 52 30, 68 30, 80 18 C 92 6, 108 6, 120 18 C 132 30, 148 30, 160 18 C 172 6, 188 6, 200 18 C 212 30, 228 30, 240 18 C 252 6, 268 6, 280 18 C 292 30, 308 30, 320 18 V 40 H 0 Z";
 
 /** Soft, low-cost water effect (SVG + gradient only — no heavy backdrop-blur) */
 function WaterWave({
   tone,
   active,
+  raised = false,
 }: {
   tone: "player" | "banker" | "tie";
   active: boolean;
+  raised?: boolean;
 }) {
   const fill =
     tone === "player"
@@ -37,10 +40,13 @@ function WaterWave({
         ? "bg-banker-glow/40"
         : "bg-tie-glow/40";
 
+  const height = raised ? "h-[68%]" : active ? "h-[52%]" : "h-[38%]";
+
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 bottom-0 h-[42%] overflow-hidden transition-opacity duration-300",
+        "pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden transition-all duration-500",
+        height,
         active ? "opacity-90" : "opacity-55",
       )}
     >
@@ -68,13 +74,13 @@ function WaterWave({
 
       {/* Only 2 subtle bubbles — cheap */}
       <motion.span
-        className={cn("absolute bottom-1.5 left-[28%] h-1 w-1 rounded-full", bubble)}
-        animate={{ y: [0, -18], opacity: [0, 0.55, 0] }}
+        className={cn("absolute bottom-1.5 left-[28%] h-1.5 w-1.5 rounded-full", bubble)}
+        animate={{ y: [0, -22], opacity: [0, 0.55, 0] }}
         transition={{ duration: 3.1, repeat: Infinity, delay: 0.3 }}
       />
       <motion.span
-        className={cn("absolute bottom-2 left-[62%] h-1 w-1 rounded-full", bubble)}
-        animate={{ y: [0, -22], opacity: [0, 0.45, 0] }}
+        className={cn("absolute bottom-2 left-[62%] h-1.5 w-1.5 rounded-full", bubble)}
+        animate={{ y: [0, -26], opacity: [0, 0.45, 0] }}
         transition={{ duration: 3.5, repeat: Infinity, delay: 1.4 }}
       />
     </div>
@@ -112,7 +118,7 @@ function SideCard({
           : "border-border",
       )}
     >
-      <WaterWave tone={tone} active={highlight || value !== null} />
+      <WaterWave tone={tone} active={highlight || value !== null} raised={highlight} />
 
       <span
         className={cn(
@@ -152,11 +158,6 @@ export function LiquidBoard({
 
   return (
     <div className="space-y-1">
-      {active && (
-        <p className="text-center text-[9px] font-medium text-muted-foreground">
-          Frequência observada nas últimas {dist.sampleSize} rodadas · não é previsão
-        </p>
-      )}
       <div className="relative h-24 sm:h-28 lg:h-32">
         <div className="absolute inset-y-0 left-0 w-[47%]">
           <SideCard

@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { rowToLiveRound, type LiveRound } from "./live-table";
-import { isProviderId, PROVIDER_LIST, type ProviderId } from "./providers";
+import { PROVIDER_LIST } from "./providers";
+import { parseFeedKeyInput } from "./access-rules";
 import { syncLiveRounds } from "./live-table.server";
 
 export interface LiveTableData {
@@ -61,20 +62,13 @@ export const getLiveTable = createServerFn({ method: "GET" })
 /** Admin: salva provedor + chave, testa e reconecta a mesa na hora. */
 export const connectLiveTable = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { key: string; provider?: string }) => {
-    const key = String(input?.key ?? "").trim();
-    if (key.length < 8 || key.length > 500) throw new Error("Chave inválida.");
-    const provider: ProviderId = isProviderId(input?.provider ?? "")
-      ? (input.provider as ProviderId)
-      : "lynxmetrics";
-    return { key, provider };
-  })
+  .inputValidator((input: { key: string; provider?: string }) => parseFeedKeyInput(input))
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
     });
-    if (!isAdmin) throw new Error("Apenas o administrador pode trocar a chave.");
+    if (isAdmin !== true) throw new Error("Apenas o administrador pode trocar a chave.");
     if (!(await import("./admin-client.server")).serviceKey())
       return { ok: false, error: "missing_service_key" };
 

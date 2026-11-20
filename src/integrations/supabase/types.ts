@@ -113,6 +113,7 @@ export type Database = {
       robot_settings: {
         Row: {
           analysis_seconds: number
+          api_paused: boolean
           id: number
           maintenance: boolean
           min_confidence: number
@@ -122,6 +123,7 @@ export type Database = {
         }
         Insert: {
           analysis_seconds?: number
+          api_paused?: boolean
           id?: number
           maintenance?: boolean
           min_confidence?: number
@@ -131,6 +133,7 @@ export type Database = {
         }
         Update: {
           analysis_seconds?: number
+          api_paused?: boolean
           id?: number
           maintenance?: boolean
           min_confidence?: number

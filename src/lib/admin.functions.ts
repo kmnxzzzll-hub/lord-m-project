@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { deleteAccountProblem } from "./access-rules";
 
 /** Permanently removes a user's account, profile, roles and avatar. Admin only. */
 export const deleteUserAccount = createServerFn({ method: "POST" })
@@ -9,18 +10,18 @@ export const deleteUserAccount = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
+    // Facts come from the database as the signed-in caller (RLS + security-definer has_role).
+    const [{ data: callerIsAdmin }, { data: targetIsAdmin }] = await Promise.all([
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+      context.supabase.rpc("has_role", { _user_id: data.userId, _role: "admin" }),
+    ]);
+    const problem = deleteAccountProblem({
+      callerId: context.userId,
+      callerIsAdmin: callerIsAdmin === true,
+      targetId: data.userId,
+      targetIsAdmin: targetIsAdmin === true,
     });
-    if (!isAdmin) throw new Error("Apenas o administrador pode excluir cadastros.");
-    if (data.userId === context.userId) throw new Error("Você não pode excluir a própria conta.");
-
-    const { data: targetIsAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: data.userId,
-      _role: "admin",
-    });
-    if (targetIsAdmin) throw new Error("Contas de administrador não podem ser excluídas.");
+    if (problem) throw new Error(problem);
 
     if (!(await import("./admin-client.server")).serviceKey()) {
       throw new Error(

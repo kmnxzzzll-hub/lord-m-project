@@ -50,7 +50,10 @@ export const Route = createFileRoute("/_authenticated/_approved/admin")({
   head: () => ({
     meta: [
       { title: "Painel Admin — Bac Bo Live" },
-      { name: "description", content: "Gerencie cadastros, acessos e calibragem do robô Bac Bo Live." },
+      {
+        name: "description",
+        content: "Gerencie cadastros, acessos e calibragem do robô Bac Bo Live.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -281,7 +284,10 @@ const BADGE_LABEL: Record<Status, string> = {
 
 function UserRow({ p, badge, children }: { p: Profile; badge?: Status; children: ReactNode }) {
   return (
-    <motion.li layout className="liquid-glass flex items-center gap-2.5 rounded-2xl p-2.5 sm:gap-3 sm:p-3">
+    <motion.li
+      layout
+      className="liquid-glass flex items-center gap-2.5 rounded-2xl p-2.5 sm:gap-3 sm:p-3"
+    >
       <Avatar
         value={p.avatar_url}
         name={p.name}
@@ -375,9 +381,15 @@ function RobotControls() {
         </div>
         <div className="flex-1">
           <p className="font-semibold">Robô ligado</p>
-          <p className="text-xs text-muted-foreground">Pausar o robô para os sinais e o histórico.</p>
+          <p className="text-xs text-muted-foreground">
+            Pausar o robô para os sinais e o histórico.
+          </p>
         </div>
-        <Switch checked={robot.running} disabled={robot.toggling} onCheckedChange={() => robot.toggle()} />
+        <Switch
+          checked={robot.running}
+          disabled={robot.toggling}
+          onCheckedChange={() => robot.toggle()}
+        />
       </div>
 
       <div className="liquid-glass flex items-center gap-3 rounded-2xl p-4 sm:p-5">
@@ -392,14 +404,22 @@ function RobotControls() {
           <Radio className="h-5 w-5" />
         </div>
         <div className="flex-1">
-          <p className="font-semibold">{robot.apiPaused ? "API da mesa pausada" : "API da mesa ligada"}</p>
+          <p className="font-semibold">
+            {robot.apiPaused ? "API da mesa pausada" : "API da mesa ligada"}
+          </p>
           <p className="text-xs text-muted-foreground">
             {robot.apiPaused
-              ? "Clique no switch para ligar de novo e voltar a receber resultados."
-              : "Clique para pausar e parar de receber resultados da mesa."}
+              ? "Pausada para todos os usuários. Desligue o switch para voltar a receber resultados."
+              : "Ligue o switch para pausar a mesa para todos os usuários."}
           </p>
         </div>
-        <Switch checked={robot.apiPaused} onCheckedChange={() => robot.toggleApiPause()} />
+        {robot.apiToggling && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+        <Switch
+          checked={robot.apiPaused}
+          disabled={robot.apiToggling}
+          aria-label="Pausar a API da mesa para todos"
+          onCheckedChange={() => robot.toggleApiPause()}
+        />
       </div>
 
       <FeedStatus />
@@ -410,7 +430,9 @@ function RobotControls() {
         </div>
         <div className="flex-1">
           <p className="font-semibold">Modo manutenção</p>
-          <p className="text-xs text-muted-foreground">Para tudo (robô, histórico e sinais) para todos.</p>
+          <p className="text-xs text-muted-foreground">
+            Para tudo (robô, histórico e sinais) para todos.
+          </p>
         </div>
         <Switch
           checked={maintenance}
@@ -426,7 +448,8 @@ function RobotControls() {
 
 function FeedStatus() {
   const queryClient = useQueryClient();
-  const { data, isError } = useQuery(liveTableQuery);
+  const { liveEnabled } = useRobot();
+  const { data, isError } = useQuery({ ...liveTableQuery, enabled: liveEnabled });
   const feed = data?.feed;
   const errorMsg = feedErrorMessage(feed?.lastError);
   const connected = !!feed?.lastSuccessAt && !feed?.lastError;

@@ -28,7 +28,9 @@ export async function readFeedConfig(admin: Admin): Promise<FeedConfig | null> {
       const parsed = JSON.parse(await modern.text()) as { provider?: string; key?: string };
       if (parsed.key && parsed.key.length >= 8) {
         return {
-          provider: isProviderId(parsed.provider ?? "") ? (parsed.provider as ProviderId) : "lynxmetrics",
+          provider: isProviderId(parsed.provider ?? "")
+            ? (parsed.provider as ProviderId)
+            : "lynxmetrics",
           key: parsed.key,
         };
       }
@@ -48,7 +50,8 @@ export async function readFeedConfig(admin: Admin): Promise<FeedConfig | null> {
     }
   }
 
-  const envKey = process.env["LYNXMETRICS_API_KEY"] || process.env["UDC_LYNXMETRICS_API_KEY"] || null;
+  const envKey =
+    process.env["LYNXMETRICS_API_KEY"] || process.env["UDC_LYNXMETRICS_API_KEY"] || null;
   if (envKey) return { provider: "lynxmetrics", key: envKey };
   return null;
 }
@@ -90,6 +93,16 @@ export async function syncLiveRounds(force = false): Promise<void> {
 
   const { getAdminClient } = await import("./admin-client.server");
   const supabaseAdmin = getAdminClient();
+  // Global pause set by the admin (robot_settings.api_paused): no provider calls for anyone.
+  // An explicit reconnect by the admin (force) still runs once to test the new key.
+  if (!force) {
+    const { data: settings } = await supabaseAdmin
+      .from("robot_settings")
+      .select("api_paused")
+      .eq("id", 1)
+      .maybeSingle();
+    if (settings?.api_paused) return;
+  }
   const { data: claimed, error: claimError } = await supabaseAdmin.rpc("claim_live_feed_sync", {
     _min_interval_ms: force ? 0 : SYNC_INTERVAL_MS,
   });
@@ -118,8 +131,7 @@ export async function syncLiveRounds(force = false): Promise<void> {
       .limit(1)
       .maybeSingle();
 
-    let cursor =
-      last && Date.now() - Date.parse(last.settled_at) < CATCH_UP_MS ? last.id : null;
+    let cursor = last && Date.now() - Date.parse(last.settled_at) < CATCH_UP_MS ? last.id : null;
 
     for (let page = 0; page < MAX_PAGES; page++) {
       let result;

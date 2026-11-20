@@ -75,7 +75,8 @@ export function SignalOrb({
   phaseStart: number;
   phaseEnd: number;
 }) {
-  const now = useNow(250);
+  // Display only (seconds + bar); the signal window itself is driven by the robot schedule.
+  const now = useNow(1000);
   const isPlayer = side === "player";
   const left = Math.max(0, Math.min(1, (phaseEnd - now) / (phaseEnd - phaseStart)));
   const secondsLeft = Math.max(0, Math.ceil((phaseEnd - now) / 1000));
@@ -124,7 +125,7 @@ export function SignalOrb({
         <div className="mt-2 h-1 w-24 overflow-hidden rounded-full bg-muted sm:w-28">
           <div
             className={cn(
-              "h-full rounded-full transition-[width] duration-300 ease-linear",
+              "h-full rounded-full transition-[width] duration-1000 ease-linear",
               isPlayer ? "bg-player-glow" : "bg-banker-glow",
             )}
             style={{ width: `${left * 100}%` }}

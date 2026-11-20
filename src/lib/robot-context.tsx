@@ -24,11 +24,16 @@ import {
 } from "@/lib/robot-schedule";
 import { loadHistory, saveHistory } from "@/lib/session-history";
 import { scoreSignals } from "@/lib/scoreboard";
+import { liveFeedEnabled, robotActive } from "@/lib/access-rules";
 
 interface RobotState extends RobotView {
   running: boolean;
   maintenance: boolean;
+  /** Global pause of the live table feed (robot_settings.api_paused), shared by every client. */
   apiPaused: boolean;
+  /** This client may call the live table (settings loaded and feed not paused). */
+  liveEnabled: boolean;
+  apiToggling: boolean;
   isAdmin: boolean;
   rounds: LiveRound[];
   clockOffset: number;
@@ -44,7 +49,8 @@ interface RobotState extends RobotView {
 const RobotCtx = createContext<RobotState | null>(null);
 const NO_ROUNDS: LiveRound[] = [];
 const PAUSE_MS = 5 * 60 * 1000;
-const API_PAUSE_KEY = "bacbo:api-paused";
+/** Old device-only pause flag; the global column replaced it, so it is only cleaned up. */
+const LEGACY_API_PAUSE_KEY = "bacbo:api-paused";
 const ADMIN_LOG_KEY = "bacbo:admin-log";
 
 function logAdminAction(action: string) {
@@ -73,21 +79,26 @@ export function RobotProvider({
   const running = !!settings?.running && !!settings.started_at;
   const maintenance = settings?.maintenance ?? false;
 
-  const [apiPaused, setApiPaused] = useState(() => {
+  const apiPaused = settings?.api_paused ?? false;
+  const switches = { loaded: !!settings, running, maintenance, apiPaused };
+  const liveEnabled = liveFeedEnabled(switches);
+
+  useEffect(() => {
     try {
-      return localStorage.getItem(API_PAUSE_KEY) === "1";
+      localStorage.removeItem(LEGACY_API_PAUSE_KEY);
     } catch {
-      return false;
+      /* ignore */
     }
-  });
+  }, []);
 
   const [pausedUntil, setPausedUntil] = useState<number | null>(null);
   const isPaused = pausedUntil !== null && Date.now() < pausedUntil;
 
-  const active = running && !maintenance && !apiPaused;
+  const active = robotActive(switches);
 
   const live = useQuery({
     ...liveTableQuery,
+    enabled: liveEnabled,
     refetchInterval: active && !isPaused ? 2_000 : false,
   });
   const allRounds = live.data?.rounds ?? NO_ROUNDS;
@@ -202,24 +213,36 @@ export function RobotProvider({
     mutation.mutate(!running);
   }, [isAdmin, mutation, running, isPaused]);
 
-  const toggleApiPause = useCallback(() => {
-    if (!isAdmin) return;
-    setApiPaused((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(API_PAUSE_KEY, next ? "1" : "0");
-      } catch {
-        /* ignore */
-      }
-      if (!next) {
-        // Reactivating: force a fresh fetch so the table starts receiving again
+  const apiPause = useMutation({
+    mutationFn: async (paused: boolean) => {
+      const { data, error } = await supabase
+        .from("robot_settings")
+        .update({ api_paused: paused, updated_at: new Date().toISOString() })
+        .eq("id", 1)
+        .select("*")
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: RobotSettings) => {
+      queryClient.setQueryData(settingsQuery.queryKey, data);
+      // Reactivating: mark the table stale so it refetches as soon as the query is enabled again.
+      if (!data.api_paused) {
         void queryClient.invalidateQueries({ queryKey: liveTableQuery.queryKey });
       }
-      toast.success(next ? "API da mesa pausada" : "API da mesa reativada");
-      logAdminAction(next ? "Pausou a API" : "Reativou a API");
-      return next;
-    });
-  }, [isAdmin, queryClient]);
+      toast.success(data.api_paused ? "API da mesa pausada para todos" : "API da mesa reativada");
+      logAdminAction(data.api_paused ? "Pausou a API" : "Reativou a API");
+    },
+    onError: () => {
+      toast.error("Não foi possível alterar a API da mesa.");
+      void queryClient.invalidateQueries({ queryKey: settingsQuery.queryKey });
+    },
+  });
+
+  const toggleApiPause = useCallback(() => {
+    if (!isAdmin || apiPause.isPending || !settings) return;
+    apiPause.mutate(!apiPaused);
+  }, [isAdmin, apiPause, apiPaused, settings]);
 
   const tableError = live.isError;
   const feed = live.data?.feed ?? null;
@@ -233,6 +256,8 @@ export function RobotProvider({
       running: running && !isPaused,
       maintenance,
       apiPaused,
+      liveEnabled,
+      apiToggling: apiPause.isPending,
       isAdmin,
       rounds,
       clockOffset,
@@ -251,6 +276,8 @@ export function RobotProvider({
       isPaused,
       maintenance,
       apiPaused,
+      liveEnabled,
+      apiPause.isPending,
       isAdmin,
       rounds,
       feed,

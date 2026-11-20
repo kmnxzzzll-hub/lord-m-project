@@ -13,8 +13,11 @@ export const settingsQuery = queryOptions({
     if (error) throw error;
     return data;
   },
-  // Users pick up the admin switching the robot on/off within a few seconds.
+  // Users pick up the admin switching the robot (or the table feed) on/off within a few seconds.
   refetchInterval: 4_000,
+  // Hidden tabs stop polling; focus/mount reuse data fetched in the last 2s.
+  refetchIntervalInBackground: false,
+  staleTime: 2_000,
 });
 
 export const allProfilesQuery = queryOptions({
@@ -29,6 +32,7 @@ export const allProfilesQuery = queryOptions({
   },
   // Admin sees new pending registrations without manual refresh.
   refetchInterval: 8_000,
+  refetchIntervalInBackground: false,
   staleTime: 4_000,
 });
 
@@ -51,9 +55,14 @@ export const myAccountQuery = (userId: string) =>
     },
     staleTime: 30_000,
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
   });
 
-/** Real rounds from the live table, plus the difference between this device's clock and the server's. */
+/**
+ * Real rounds from the live table, plus the difference between this device's clock and the server's.
+ * The polling cadence is set by the RobotProvider; callers must pass `enabled` from
+ * `liveFeedEnabled` so a global pause stops every client.
+ */
 export const liveTableQuery = queryOptions({
   queryKey: ["live-table"],
   queryFn: async () => {
@@ -63,4 +72,7 @@ export const liveTableQuery = queryOptions({
     return { ...data, clockOffset };
   },
   retry: 1,
+  // Below the 2s polling cadence, so it never delays a poll; avoids a duplicate fetch on mount/focus.
+  staleTime: 1_000,
+  refetchIntervalInBackground: false,
 });

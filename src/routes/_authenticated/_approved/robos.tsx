@@ -6,7 +6,7 @@ import { Logo } from "@/components/bacbo/Logo";
 import { LiquidBoard } from "@/components/bacbo/LiquidBoard";
 import { RobotIcon } from "@/components/bacbo/RobotIcon";
 import { LiveTableCard } from "@/components/bacbo/LiveTable";
-import { SignalOrb } from "@/components/bacbo/SignalOrb";
+import { SignalOrb, WaterWave } from "@/components/bacbo/SignalOrb";
 import { Scoreboard, ResultBanner } from "@/components/bacbo/Scoreboard";
 import { summarizeRoundFrequencies } from "@/lib/round-statistics";
 import { useRobot } from "@/lib/robot-context";
@@ -167,9 +167,10 @@ function Panel({ children }: { children: ReactNode }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       transition={{ duration: 0.16 }}
-      className="flex flex-col items-center rounded-2xl border border-border bg-card px-4 py-4 text-center sm:px-5 sm:py-5"
+      className="relative isolate flex flex-col items-center overflow-hidden rounded-2xl border border-border bg-card px-4 py-4 text-center sm:px-5 sm:py-5"
     >
-      {children}
+      <WaterWave />
+      <div className="relative z-10 flex w-full flex-col items-center">{children}</div>
     </motion.div>
   );
 }

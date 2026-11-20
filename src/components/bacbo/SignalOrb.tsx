@@ -6,61 +6,47 @@ import { cn } from "@/lib/utils";
 const WAVE =
   "M0 14 Q 20 6 40 14 T 80 14 T 120 14 T 160 14 T 200 14 T 240 14 T 280 14 T 320 14 V 40 H 0 Z";
 
-/** Soft, low-contrast water effect — not flashy */
-function WaterWave({ isPlayer }: { isPlayer: boolean }) {
+/** Single decorative water layer: low without a signal, raised when a signal is shown. */
+export function WaterWave({
+  side,
+  raised = false,
+}: {
+  side?: Side;
+  raised?: boolean;
+}) {
+  const fill = side === "player"
+    ? "fill-player/20"
+    : side === "banker"
+      ? "fill-banker/20"
+      : "fill-muted-foreground/12";
+  const gradient = side === "player"
+    ? "from-player/18"
+    : side === "banker"
+      ? "from-banker/18"
+      : "from-muted-foreground/10";
+
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[34%] overflow-hidden opacity-70">
+    <motion.div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden"
+      initial={{ height: "14%", opacity: 0.42 }}
+      animate={{
+        height: raised ? "62%" : "14%",
+        opacity: raised ? 0.76 : 0.42,
+      }}
+      transition={{ duration: 0.85, ease: "easeInOut" }}
+    >
       <motion.svg
         viewBox="0 0 320 40"
         preserveAspectRatio="none"
-        className={cn(
-          "absolute bottom-0 h-full w-[200%]",
-          isPlayer ? "fill-player/15" : "fill-banker/15",
-        )}
+        className={cn("absolute bottom-0 h-full w-[200%]", fill)}
         animate={{ x: ["-50%", "0%"] }}
         transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
       >
         <path d={WAVE} />
       </motion.svg>
-
-      <motion.svg
-        viewBox="0 0 320 40"
-        preserveAspectRatio="none"
-        className={cn(
-          "absolute bottom-0 h-[80%] w-[200%]",
-          isPlayer ? "fill-player/22" : "fill-banker/22",
-        )}
-        animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration: 5.5, repeat: Infinity, ease: "linear" }}
-      >
-        <path d={WAVE} />
-      </motion.svg>
-
-      <div
-        className={cn(
-          "absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t",
-          isPlayer ? "from-player/18 to-transparent" : "from-banker/18 to-transparent",
-        )}
-      />
-
-      {/* Only 2 subtle bubbles */}
-      <motion.span
-        className={cn(
-          "absolute bottom-2 left-[32%] h-1 w-1 rounded-full",
-          isPlayer ? "bg-player-glow/40" : "bg-banker-glow/40",
-        )}
-        animate={{ y: [0, -22], opacity: [0, 0.55, 0] }}
-        transition={{ duration: 3.2, repeat: Infinity, delay: 0.4 }}
-      />
-      <motion.span
-        className={cn(
-          "absolute bottom-3 left-[58%] h-1 w-1 rounded-full",
-          isPlayer ? "bg-player-glow/35" : "bg-banker-glow/35",
-        )}
-        animate={{ y: [0, -26], opacity: [0, 0.45, 0] }}
-        transition={{ duration: 3.6, repeat: Infinity, delay: 1.6 }}
-      />
-    </div>
+      <div className={cn("absolute inset-0 bg-gradient-to-t to-transparent", gradient)} />
+    </motion.div>
   );
 }
 
@@ -92,7 +78,7 @@ export function SignalOrb({
         isPlayer ? "border-player/40" : "border-banker/40",
       )}
     >
-      <WaterWave isPlayer={isPlayer} />
+      <WaterWave side={side} raised />
 
       <div className="relative z-10 flex flex-col items-center">
         <div

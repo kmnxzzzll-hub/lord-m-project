@@ -1,25 +1,15 @@
-import { useEffect } from "react";
-import { Link, useLocation, useRouter } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Bot, History, UserRound } from "lucide-react";
+import { Bot, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/robos", label: "Robôs", icon: Bot },
-  { to: "/historico", label: "Histórico", icon: History },
   { to: "/perfil", label: "Perfil", icon: UserRound },
 ] as const;
 
 export function BottomNav() {
   const { pathname } = useLocation();
-  const router = useRouter();
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      for (const { to } of items) void router.preloadRoute({ to }).catch(() => {});
-    }, 300);
-    return () => clearTimeout(t);
-  }, [router]);
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40">

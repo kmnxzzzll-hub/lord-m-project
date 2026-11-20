@@ -7,7 +7,8 @@ Lê rodadas reais da mesa Bac Bo Live e mostra sinais a utilizadores aprovados.
 - `src/routes/index.tsx` — redireciona para `/robos` ou `/auth`.
 - `src/routes/auth.tsx` — login/cadastro (e-mail e Google).
 - `src/routes/_authenticated/` — exige sessão; `_approved/` exige conta aprovada:
-  `robos`, `historico`, `perfil`, `admin` (só administradores; o servidor e o RLS também verificam).
+  `robos`, `perfil`, `admin` (só administradores; o servidor e o RLS também verificam).
+- A rota antiga `/historico` redireciona para `/robos`; não existe mais opção Histórico na navegação.
 - `src/lib/` — motor de sinais, agenda do robô, funções de servidor (`*.functions.ts`), código só de servidor (`*.server.ts`) e regras puras de acesso (`access-rules.ts`).
 - `drizzle/migrations/` — histórico do esquema da base (gerido pelo Lovable; não editar migrações antigas).
 
@@ -53,8 +54,7 @@ select role, count(*) from public.user_roles group by role;
 ```
 A pausa da API da mesa é global (`robot_settings.api_paused`): só administradores a alteram (política RLS de update) e, enquanto ativa, nenhum cliente consulta a mesa e o servidor não chama o provedor.
 
-
-## Estatísticas históricas
+## Estatísticas observadas
 
 - O painel de distribuição resume as frequências observadas nas últimas 20 rodadas recebidas (ou em todas, quando há menos de 20).
 - Os percentuais são calculados diretamente a partir das contagens de Player, Banker e Tie; o arredondamento mantém a soma em 100%.

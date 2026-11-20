@@ -1,3 +1,5 @@
+import { summarizeRoundFrequencies } from "./round-statistics";
+
 /**
  * Bac Bo pattern engine — expanded classic strategy set.
  * Only entry + 1 gale. No G2.
@@ -335,23 +337,9 @@ export function resolveSignal(
   return { result: "red", tieHit: false, used: Math.min(2, next.length) };
 }
 
-export function distribution(history: Round[], match?: PatternMatch | null) {
-  const recent = history.slice(-20);
-  const total = recent.length || 1;
-  let p = recent.filter((r) => r.outcome === "P").length / total;
-  let b = recent.filter((r) => r.outcome === "B").length / total;
-  let t = recent.filter((r) => r.outcome === "T").length / total;
-  t = Math.min(0.15, Math.max(0.05, t));
-  if (match) {
-    const boost = (match.confidence - 50) / 100;
-    if (match.side === "player") p += boost;
-    else b += boost;
-  }
-  const rest = 1 - t;
-  const sum = p + b || 1;
-  const player = Math.round((p / sum) * rest * 100);
-  const tie = Math.round(t * 100);
-  return { player, banker: 100 - player - tie, tie };
+export function distribution(history: Round[]) {
+  const { player, banker, tie } = summarizeRoundFrequencies(history);
+  return { player, banker, tie };
 }
 
 export interface DayStats {

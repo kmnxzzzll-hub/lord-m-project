@@ -8,7 +8,7 @@ import { RobotIcon } from "@/components/bacbo/RobotIcon";
 import { LiveTableCard } from "@/components/bacbo/LiveTable";
 import { SignalOrb } from "@/components/bacbo/SignalOrb";
 import { Scoreboard, ResultBanner } from "@/components/bacbo/Scoreboard";
-import { distribution } from "@/lib/bacbo-engine";
+import { summarizeRoundFrequencies } from "@/lib/round-statistics";
 import { useRobot } from "@/lib/robot-context";
 import { MIN_HISTORY } from "@/lib/robot-schedule";
 import { useNow } from "@/lib/use-now";
@@ -44,7 +44,7 @@ function RobotsPage() {
   const { phase, isAdmin } = robot;
   const on = phase !== "off";
 
-  const dist = phase === "signal" ? distribution(robot.history, robot.signal) : null;
+  const dist = robot.history.length ? summarizeRoundFrequencies(robot.history, 20) : null;
 
   return (
     <div className="space-y-3 sm:space-y-3.5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8 lg:gap-y-3.5 lg:space-y-0">

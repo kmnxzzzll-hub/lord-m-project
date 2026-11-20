@@ -74,10 +74,9 @@ describe("stats", () => {
     const s = computeStats(["green_g0", "green_g1", "red", "green_g1"]);
     expect(s).toMatchObject({ total: 4, greens: 3, accuracy: 75, streak: 2, g0: 1, g1: 2, reds: 1 });
   });
-  it("distribution sums to 100 and tie stays between 5 and 15", () => {
+  it("distribution reports observed frequencies without clipping ties", () => {
     const d = distribution(rounds("PPPPPPPPPPTTTTTTTTTT"));
-    expect(d.player + d.banker + d.tie).toBe(100);
-    expect(d.tie).toBe(15);
+    expect(d).toEqual({ player: 50, banker: 0, tie: 50 });
   });
   it("rolls follow dice sums", () => {
     const r = rollRound(() => 0.99);

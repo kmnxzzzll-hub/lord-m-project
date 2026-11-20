@@ -52,3 +52,11 @@ select status, count(*) from public.profiles group by status;
 select role, count(*) from public.user_roles group by role;
 ```
 A pausa da API da mesa é global (`robot_settings.api_paused`): só administradores a alteram (política RLS de update) e, enquanto ativa, nenhum cliente consulta a mesa e o servidor não chama o provedor.
+
+
+## Estatísticas históricas
+
+- O painel de distribuição resume as frequências observadas nas últimas 20 rodadas recebidas (ou em todas, quando há menos de 20).
+- Os percentuais são calculados diretamente a partir das contagens de Player, Banker e Tie; o arredondamento mantém a soma em 100%.
+- A visualização não aplica bónus por padrões, não extrapola tendências e identifica os valores como histórico, não como previsão nem como probabilidade da próxima rodada.
+- Esta alteração não modifica os critérios, a cadência ou a lógica de geração de sinais.

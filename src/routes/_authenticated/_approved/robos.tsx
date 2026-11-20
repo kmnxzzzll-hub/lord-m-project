@@ -174,31 +174,11 @@ function Panel({ children }: { children: ReactNode }) {
   );
 }
 
-const sideName = (side: "player" | "banker") =>
-  side === "player" ? "Azul (Player)" : "Vermelho (Banker)";
-
 function Analyzing() {
-  const { phaseStart, phaseEnd, reason, rounds, waiting, signal } = useRobot();
+  const { phaseStart, phaseEnd, reason, waiting } = useRobot();
   const now = useNow(250);
   const total = Math.max(1, phaseEnd - phaseStart);
   const elapsed = Math.min(total, Math.max(0, now - phaseStart));
-
-  const text =
-    reason === "collecting"
-      ? "Coletando rodadas da mesa."
-      : reason === "result" && signal
-        ? `Apostas fechadas. Aguardando o resultado da entrada no ${sideName(signal.side)}.`
-        : reason === "no_pattern"
-          ? "Analisando padrões em formação. Nenhum padrão claro ainda — sem entrada forçada."
-          : reason === "conflict"
-            ? "Player e Banker com leituras igualmente fortes. Entrada cancelada por segurança."
-            : reason === "cold_table"
-              ? "Mesa fria: as duas últimas leituras falharam. Aguardando a mesa voltar ao padrão."
-              : reason === "weak_pattern"
-                ? "O padrão formado está a falhar nesta mesa. Aguardando um padrão mais forte."
-                : reason === "next_round"
-                  ? "Aguardando a próxima rodada da mesa."
-                  : "Lendo a mesa e identificando padrões claros.";
 
   return (
     <Panel>
@@ -209,7 +189,6 @@ function Analyzing() {
           {reason === "result" ? "AGUARDANDO" : "ANALISANDO"}
         </span>
       </h2>
-      <p className="mt-1 text-[11px] text-muted-foreground">{text}</p>
       <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
         {waiting ? (
           <motion.div

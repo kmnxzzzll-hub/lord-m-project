@@ -1,88 +1,105 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-/** Slightly more geometric / cube-like wave with higher amplitude */
+/** Soft geometric wave */
 const WAVE =
   "M0 18 C 12 6, 28 6, 40 18 C 52 30, 68 30, 80 18 C 92 6, 108 6, 120 18 C 132 30, 148 30, 160 18 C 172 6, 188 6, 200 18 C 212 30, 228 30, 240 18 C 252 6, 268 6, 280 18 C 292 30, 308 30, 320 18 V 40 H 0 Z";
 
-/** Soft, low-cost water effect (SVG + gradient only — no heavy backdrop-blur) */
+/** Water effect that scales with the percentage value */
 function WaterWave({
   tone,
-  active,
-  raised = false,
+  value,
+  highlight = false,
 }: {
   tone: "player" | "banker" | "tie";
-  active: boolean;
-  raised?: boolean;
+  value: number | null;
+  highlight?: boolean;
 }) {
+  const pct = value ?? 0;
+
+  // Height scales with the number (min 28%, max 78%)
+  const heightPct = 28 + Math.min(50, (pct / 100) * 50);
+  const opacity = 0.35 + Math.min(0.45, (pct / 100) * 0.45);
+
   const fill =
     tone === "player"
-      ? "fill-player/15"
+      ? "fill-player/12"
       : tone === "banker"
-        ? "fill-banker/15"
-        : "fill-tie/15";
+        ? "fill-banker/12"
+        : "fill-tie/12";
   const fillStrong =
     tone === "player"
-      ? "fill-player/22"
+      ? "fill-player/18"
       : tone === "banker"
-        ? "fill-banker/22"
-        : "fill-tie/22";
+        ? "fill-banker/18"
+        : "fill-tie/18";
   const from =
     tone === "player"
-      ? "from-player/18"
+      ? "from-player/14"
       : tone === "banker"
-        ? "from-banker/18"
-        : "from-tie/18";
+        ? "from-banker/14"
+        : "from-tie/14";
   const bubble =
     tone === "player"
-      ? "bg-player-glow/40"
+      ? "bg-player-glow/50"
       : tone === "banker"
-        ? "bg-banker-glow/40"
-        : "bg-tie-glow/40";
-
-  const height = raised ? "h-[68%]" : active ? "h-[52%]" : "h-[38%]";
+        ? "bg-banker-glow/50"
+        : "bg-tie-glow/50";
 
   return (
     <div
-      className={cn(
-        "pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden transition-all duration-500",
-        height,
-        active ? "opacity-90" : "opacity-55",
-      )}
+      className="pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden transition-all duration-700 ease-out"
+      style={{
+        height: `${highlight ? Math.min(82, heightPct + 12) : heightPct}%`,
+        opacity: highlight ? Math.min(0.95, opacity + 0.2) : opacity,
+      }}
     >
+      {/* Main wave – more transparent liquid look */}
       <motion.svg
         viewBox="0 0 320 40"
         preserveAspectRatio="none"
-        className={cn("absolute bottom-0 h-full w-[200%]", fill)}
+        className={cn("absolute bottom-0 h-full w-[210%]", fill)}
         animate={{ x: ["-50%", "0%"] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 7.5, repeat: Infinity, ease: "linear" }}
       >
         <path d={WAVE} />
       </motion.svg>
 
+      {/* Second layer for depth */}
       <motion.svg
         viewBox="0 0 320 40"
         preserveAspectRatio="none"
-        className={cn("absolute bottom-0 h-[80%] w-[200%]", fillStrong)}
+        className={cn("absolute bottom-0 h-[75%] w-[210%]", fillStrong)}
         animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration: 5.5, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 5.8, repeat: Infinity, ease: "linear" }}
       >
         <path d={WAVE} />
       </motion.svg>
 
-      <div className={cn("absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t to-transparent", from)} />
+      <div className={cn("absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t to-transparent", from)} />
 
-      {/* Only 2 subtle bubbles — cheap */}
-      <motion.span
-        className={cn("absolute bottom-1.5 left-[28%] h-1.5 w-1.5 rounded-full", bubble)}
-        animate={{ y: [0, -22], opacity: [0, 0.55, 0] }}
-        transition={{ duration: 3.1, repeat: Infinity, delay: 0.3 }}
-      />
-      <motion.span
-        className={cn("absolute bottom-2 left-[62%] h-1.5 w-1.5 rounded-full", bubble)}
-        animate={{ y: [0, -26], opacity: [0, 0.45, 0] }}
-        transition={{ duration: 3.5, repeat: Infinity, delay: 1.4 }}
-      />
+      {/* Bubbles – light up more when value is higher */}
+      {pct > 15 && (
+        <>
+          <motion.span
+            className={cn("absolute bottom-1.5 left-[26%] h-1.5 w-1.5 rounded-full", bubble)}
+            animate={{ y: [0, -20 - pct * 0.15], opacity: [0, 0.6, 0] }}
+            transition={{ duration: 2.8, repeat: Infinity, delay: 0.2 }}
+          />
+          <motion.span
+            className={cn("absolute bottom-2 left-[58%] h-1.5 w-1.5 rounded-full", bubble)}
+            animate={{ y: [0, -24 - pct * 0.12], opacity: [0, 0.5, 0] }}
+            transition={{ duration: 3.2, repeat: Infinity, delay: 1.1 }}
+          />
+          {pct > 40 && (
+            <motion.span
+              className={cn("absolute bottom-1 left-[42%] h-1 w-1 rounded-full", bubble)}
+              animate={{ y: [0, -18 - pct * 0.1], opacity: [0, 0.45, 0] }}
+              transition={{ duration: 2.6, repeat: Infinity, delay: 0.7 }}
+            />
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -118,7 +135,7 @@ function SideCard({
           : "border-border",
       )}
     >
-      <WaterWave tone={tone} active={highlight || value !== null} raised={highlight} />
+      <WaterWave tone={tone} value={value} highlight={highlight} />
 
       <span
         className={cn(
@@ -154,53 +171,49 @@ export function LiquidBoard({
   dist: { player: number; banker: number; tie: number; sampleSize: number } | null;
   winner?: "player" | "banker" | null;
 }) {
-  const active = dist !== null;
-
   return (
-    <div className="space-y-1">
-      <div className="relative h-24 sm:h-28 lg:h-32">
-        <div className="absolute inset-y-0 left-0 w-[47%]">
-          <SideCard
-            tone="player"
-            label="Player"
-            value={dist?.player ?? null}
-            highlight={winner === "player"}
-          />
-        </div>
-
-        <div className="absolute inset-y-0 right-0 w-[47%]">
-          <SideCard
-            tone="banker"
-            label="Banker"
-            value={dist?.banker ?? null}
-            highlight={winner === "banker"}
-          />
-        </div>
-
-        {/* Center Tie card */}
-        <motion.div
-          layout
-          animate={{
-            y: winner ? 2 : 0,
-            scale: winner ? 0.96 : 1,
-          }}
-          transition={{ type: "spring", stiffness: 380, damping: 28 }}
-          className={cn(
-            "absolute left-1/2 top-1/2 z-10 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center overflow-hidden rounded-xl border bg-card/95 shadow-sm sm:h-20 sm:w-20",
-            winner ? "border-border/60 opacity-80" : "border-border",
-            active && !winner && "ring-1 ring-tie/20",
-          )}
-        >
-          <WaterWave tone="tie" active={active} />
-
-          <span className="relative z-10 text-[8px] font-semibold uppercase tracking-[0.16em] text-tie-glow sm:text-[9px]">
-            Tie
-          </span>
-          <span className="relative z-10 mt-0.5 font-display text-lg font-extrabold tabular-nums sm:text-xl">
-            {active ? `${dist!.tie}%` : "--"}
-          </span>
-        </motion.div>
+    <div className="relative h-24 sm:h-28 lg:h-32">
+      <div className="absolute inset-y-0 left-0 w-[47%]">
+        <SideCard
+          tone="player"
+          label="Player"
+          value={dist?.player ?? null}
+          highlight={winner === "player"}
+        />
       </div>
+
+      <div className="absolute inset-y-0 right-0 w-[47%]">
+        <SideCard
+          tone="banker"
+          label="Banker"
+          value={dist?.banker ?? null}
+          highlight={winner === "banker"}
+        />
+      </div>
+
+      {/* Center Tie card */}
+      <motion.div
+        layout
+        animate={{
+          y: winner ? 2 : 0,
+          scale: winner ? 0.96 : 1,
+        }}
+        transition={{ type: "spring", stiffness: 380, damping: 28 }}
+        className={cn(
+          "absolute left-1/2 top-1/2 z-10 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center overflow-hidden rounded-xl border bg-card/95 shadow-sm sm:h-20 sm:w-20",
+          winner ? "border-border/60 opacity-80" : "border-border",
+          dist && !winner && "ring-1 ring-tie/20",
+        )}
+      >
+        <WaterWave tone="tie" value={dist?.tie ?? null} />
+
+        <span className="relative z-10 text-[8px] font-semibold uppercase tracking-[0.16em] text-tie-glow sm:text-[9px]">
+          Tie
+        </span>
+        <span className="relative z-10 mt-0.5 font-display text-lg font-extrabold tabular-nums sm:text-xl">
+          {dist ? `${dist.tie}%` : "--"}
+        </span>
+      </motion.div>
     </div>
   );
 }
